@@ -1,0 +1,8 @@
+{
+    "workingDIR": "/N/slate/pascmart/PROJECTS/TestBACseq/BAC67",
+    "scriptDIR": "/N/slate/pascmart/PROJECTS/TestBACseq/scripts",
+    "hostGenomeFasta": "/N/slate/pascmart/Bank/Ecoli/K12_MG1655_GCA_000005845.2/aln/EcoliK12_masked_pBeloBAC_Ath45S.fa",
+    "VectorFasta": "/N/project/NOR/Bank/pBeloBAC11_KanR_v2_rotated.fa",
+    "GeneAFasta": "/N/project/NOR/Bank/18S_rDNA_Col-0_consensus.fa",
+    "GeneBFasta": "/N/project/NOR/Bank/25S_rDNA_Col-0_consensus.fa",
+}
