@@ -3,11 +3,15 @@ configfile:
 
 # SAMPLENAME = config['sampleName']
 WORKDIR = config['workingDIR']
+LOGDIR = WORKDIR+"/log"
 SAMPLENAME, = glob_wildcards(WORKDIR+"/data/raw/{id}.fastq")
+
+#modules
+#import os.path
 
 rule all:
     input:
-        expand("align/Blast/{sample}_vectorblast.res", sample=SAMPLENAME),
+        expand("align/Blast/results/{sample}_vectorblast.res", sample=SAMPLENAME),
         expand("tables/ReadNames/ReadNameTable_{sample}.tsv", sample=SAMPLENAME),
         expand("tables/ReadLength/ReadLength_{sample}.tsv", sample=SAMPLENAME)
 
@@ -54,7 +58,7 @@ rule RenamedReads_fq2fa:
         "data/renamed/{sample}.fa"
     shell:
         """
-        seqtk seq -A {input} > {output}
+        sed -n '1~4s/^@/>/p;2~4p' {input} > {output}
         """
 
 # Get a table with read lengths
@@ -75,16 +79,56 @@ rule ReadLengthTable:
 # Create Read database for Blast
 rule CreateBlastDatabase:
         message: "Creating BLAST database for {input}"
-        input: "data/renamed/{sample}.fq"
-        output: touch("align/Blast/db/{sample}_blastdb")
-
+        input:
+            "data/renamed/{sample}.fa"
+        output:
+            "align/Blast/db/{sample}_blastdb.nhr"
+        shell:
+            """
+            mkdir -p {LOGDIR}
+            outbase={output}
+            outbase=${{outbase%%.nhr}}
+            makeblastdb \
+              -in {input} \
+              -out ${{outbase}} \
+              -parse_seqids \
+              -dbtype nucl \
+              -logfile {LOGDIR}/makeblastdb_{SAMPLENAME}.log
+            """
 
 # Align the vector
 rule AlignVector:
         message: "Aligning vector sequence on the reads {input}"
         input:
-            "align/Blast/db/{sample}_blastdb",
-            vector = config['VectorFasta']
-        output: touch("align/Blast/{sample}_vectorblast.res")
+            query = config['VectorFasta'],
+            db = "align/Blast/db/{sample}_blastdb.nhr"
+        output:
+            "align/Blast/results/{sample}_vectorblast.res"
+        shell:
+            """
+            dbbase={input.db}
+            dbbase=${{dbbase%%.nhr}}
+            blastn \
+              -task megablast \
+              -query {input.query} \
+              -db ${{dbbase}} \
+              -out {output} \
+              -outfmt 6 \
+              -num_alignments 100000000
+            """
+
+# Check for the presence of data for geneA
+# rule check_GeneA_exists:
+#         message: "Check that GeneA is used"
+#         input:
+#             geneA=config['GeneAFasta']
+#         shell:
+#             """
+#             if [[ ! -z {geneA} ]]
+#             then
+#                 touch .GeneAPresent
+#             else
+#                 touch .GeneAAbsent
+#             """
 
 # Classify the reads
