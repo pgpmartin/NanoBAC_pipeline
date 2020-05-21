@@ -1,6 +1,8 @@
 configfile:
     "config.json"
 
+shell.executable("/bin/bash")
+
 # SAMPLENAME = config['sampleName']
 WORKDIR = config['workingDIR']
 LOGDIR = WORKDIR+"/log"
@@ -12,10 +14,11 @@ SAMPLENAME, = glob_wildcards(WORKDIR+"/data/raw/{id}.fastq")
 
 rule all:
     input:
-        expand("tables/ReadNames/ReadNameTable_{sample}.tsv", sample=SAMPLENAME),
+        expand("tables/ReadNames/{sample}_ReadNameTable.tsv", sample=SAMPLENAME),
         expand("data/renamed/{sample}.fq.gz", sample=SAMPLENAME),
         expand("data/renamed/{sample}.fa", sample=SAMPLENAME),
-        expand("tables/ReadLength/ReadLength_{sample}.tsv", sample=SAMPLENAME),
+        expand("tables/ReadLength/{sample}_ReadLength.tsv", sample=SAMPLENAME),
+        expand("tables/ReadClass/{sample}_ReadClass.rds", sample=SAMPLENAME),
         expand("align/Blast/results/{sample}_vectorblast.res", sample=SAMPLENAME),
         expand("align/Blast/results/{sample}_geneAblast.res", sample=SAMPLENAME),
         expand("align/Blast/results/{sample}_geneBblast.res", sample=SAMPLENAME),
@@ -29,7 +32,7 @@ rule Read_NameMapping:
     input:
         "data/raw/{sample}.fastq"
     output:
-        "tables/ReadNames/ReadNameTable_{sample}.tsv"
+        "tables/ReadNames/{sample}_ReadNameTable.tsv"
     params:
         sampleName = "{sample}"
     shell:
@@ -89,7 +92,7 @@ rule ReadLengthTable:
     input:
         "data/renamed/{sample}.fa"
     output:
-        "tables/ReadLength/ReadLength_{sample}.tsv"
+        "tables/ReadLength/{sample}_ReadLength.tsv"
     shell:
         """
         cat {input} | \
@@ -285,4 +288,37 @@ rule Filter_HostAlignment_SAM2BAM:
           -o {output}
         """
 
-# Classify the reads
+# Annotate the reads
+rule Annotate_Reads:
+    message: "Annotating reads"
+    input:
+        blastvec = "align/Blast/results/{sample}_vectorblast.res",
+        blastGeneA = "align/Blast/results/{sample}_geneAblast.res",
+        blastGeneB = "align/Blast/results/{sample}_geneBblast.res",
+        pafHost = "align/minimap2/host/{sample}.paf",
+        readLength = "tables/ReadLength/{sample}_ReadLength.tsv"
+    params:
+        vectorSequence = config['VectorFasta'],
+        minHost_mapQ = 10,
+        minaln = 1,
+        MinDVDsides = 10000
+    output:
+        "tables/ReadClass/{sample}_ReadClass.rds"
+    log:
+        "log/{sample}_AnnotateReads.log"
+    shell:
+        """
+        Rscript {SCRIPTDIR}/AnnotateBACreads_args.R \
+          -blastvec={input.blastvec} \
+          -blastGeneA={input.blastGeneA} \
+          -blastGeneB={input.blastGeneB} \
+          -pafHost={input.pafHost} \
+          -minHost_mapQ={params.minHost_mapQ} \
+          -readLength={input.readLength} \
+          -vectorSequence={params.vectorSequence} \
+          -minaln={params.minaln} \
+          -MinDVDsides={params.MinDVDsides} \
+          -outputdir=$(dirname {output}) \
+          -outFileName=$(basename {output}) \
+        >> {log} 2>&1
+        """
