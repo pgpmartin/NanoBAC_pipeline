@@ -23,8 +23,10 @@ rule all:
         expand("align/Blast/results/{sample}_geneAblast.res", sample=SAMPLENAME),
         expand("align/Blast/results/{sample}_geneBblast.res", sample=SAMPLENAME),
         expand("align/minimap2/host/{sample}.paf", sample=SAMPLENAME),
-        expand("align/minimap2/host/{sample}_alignment.stats", sample=SAMPLENAME)
-
+        expand("align/minimap2/host/{sample}_alignment.stats", sample=SAMPLENAME),
+        expand("SelectedReads/VDV/{sample}_SelectedVDVreads.rds", sample=SAMPLENAME),
+        expand("SelectedReads/VDV/{sample}_SelectedVDVreads.fa", sample=SAMPLENAME),
+        expand("SelectedReads/VDV/{sample}_SelectedVDVreads.fq.gz", sample=SAMPLENAME)
 
 # Create a table with new names and old names
 rule Read_NameMapping:
@@ -76,14 +78,9 @@ rule RenamedReads_fq2fa:
 # Compress fastq file
 rule Compress_Renamed_FastQ:
     message: "Compressing {input}"
-    input:
-        "data/renamed/{sample}.fq"
-    output:
-        "data/renamed/{sample}.fq.gz"
-    shell:
-        """
-        gzip -c {input} > {output}
-        """
+    input: "data/renamed/{sample}.fq"
+    output: "data/renamed/{sample}.fq.gz"
+    shell: " gzip -c {input} > {output} "
 
 
 # Get a table with read lengths
@@ -322,3 +319,78 @@ rule Annotate_Reads:
           -outFileName=$(basename {output}) \
         >> {log} 2>&1
         """
+
+# Select VDV Reads
+rule Select_VDVreads:
+    message: "Selecting VDV reads"
+    input:
+        "tables/ReadClass/{sample}_ReadClass.rds"
+    params:
+        SizeTolerance = 0.05,
+        WithGeneA = True,
+        WithGeneB = True,
+        MaxClusters = 10,
+        plotVar = "InsertLength",
+        plotRes = 150,
+        plotHeight = 4,
+        plotWidth = 4,
+        plotFormat = "png"
+    output:
+        outPlot = "Plots/{sample}_VDVreadSelection.png",
+        outRDS = "SelectedReads/VDV/{sample}_SelectedVDVreads.rds",
+        outVDVnames = "SelectedReads/VDV/{sample}_SelectedVDVreadNames.tsv"
+    log:
+        "log/{sample}_VDVreadSelection.log"
+    shell:
+        """
+        Rscript {SCRIPTDIR}/selectVDVreads_args.R \
+          -ReadClass={input} \
+          -SizeTolerance={params.SizeTolerance} \
+          -WithGeneA={params.WithGeneA} \
+          -WithGeneB={params.WithGeneB} \
+          -MaxClusters={params.MaxClusters} \
+          -plotVar={params.plotVar} \
+          -plotRes={params.plotRes} \
+          -plotHeight={params.plotHeight} \
+          -plotWidth={params.plotWidth} \
+          -plotFormat={params.plotFormat} \
+          -outPlot={output.outPlot} \
+          -outRDS={output.outRDS} \
+          -outVDVnames={output.outVDVnames} \
+        >> {log} 2>&1
+        """
+
+# Obtain fastq of VDV Reads
+rule Get_VDV_fastq:
+    message: "Obtain fastq file of selected VDV reads"
+    input:
+        rawfastq = "data/renamed/{sample}.fq",
+        VDVselection = "SelectedReads/VDV/{sample}_SelectedVDVreadNames.tsv"
+    output:
+        temp("SelectedReads/VDV/{sample}_SelectedVDVreads.fq")
+    shell:
+        """
+        seqtk subseq \
+            {input.rawfastq} \
+            {input.VDVselection} > \
+            {output}
+        """
+
+# Convert VDV fastq to fasta
+rule VDV_fastq2fasta:
+    message: "Convert VDV reads fastq to fasta"
+    input:
+        "SelectedReads/VDV/{sample}_SelectedVDVreads.fq"
+    output:
+        "SelectedReads/VDV/{sample}_SelectedVDVreads.fa"
+    shell:
+        """
+        sed -n '1~4s/^@/>/p;2~4p' {input} > {output}
+        """
+
+# Compress VDV fastq
+rule gzip_VDV_fastq:
+    message: "Compress VDV reads fastq"
+    input: "SelectedReads/VDV/{sample}_SelectedVDVreads.fq"
+    output: "SelectedReads/VDV/{sample}_SelectedVDVreads.fq.gz"
+    shell: "gzip -c {input} > {output}"
