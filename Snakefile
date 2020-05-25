@@ -26,7 +26,8 @@ rule all:
         expand("align/minimap2/host/{sample}_alignment.stats", sample=SAMPLENAME),
         expand("SelectedReads/VDV/{sample}_SelectedVDVreads.rds", sample=SAMPLENAME),
         expand("SelectedReads/VDV/{sample}_SelectedVDVreads.fa", sample=SAMPLENAME),
-        expand("SelectedReads/VDV/{sample}_SelectedVDVreads.fq.gz", sample=SAMPLENAME)
+        expand("SelectedReads/VDV/{sample}_SelectedVDVreads.fq.gz", sample=SAMPLENAME),
+        expand("SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa", sample=SAMPLENAME)
 
 # Create a table with new names and old names
 rule Read_NameMapping:
@@ -394,3 +395,57 @@ rule gzip_VDV_fastq:
     input: "SelectedReads/VDV/{sample}_SelectedVDVreads.fq"
     output: "SelectedReads/VDV/{sample}_SelectedVDVreads.fq.gz"
     shell: "gzip -c {input} > {output}"
+
+# Prepare VDV reads for multiple sequence alignments (by replacing the vector sequence)
+rule Prepare_VDV_reads:
+    message: "Preparing VDV reads for alignment"
+    input:
+        VDVfasta = "SelectedReads/VDV/{sample}_SelectedVDVreads.fa",
+        blastvec = "align/Blast/results/{sample}_vectorblast.res"
+    params:
+        FilterOutputfasta = True,
+        vectorSequence = config['VectorFasta'],
+        RestrictionSite = config['RestrictionSite'],
+        UnalignedVectorLength = 1000,
+        SideSeqSearch = 10
+    output:
+        outVDVfasta = "SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa",
+        VDVjunctions = "SelectedReads/VDVprepared/{sample}_VDVreads_InsertVectorJunctions.rds"
+    log:
+        "log/{sample}_VDVreadPreparation.log"
+    threads: 4
+    shell:
+        """
+        Rscript {SCRIPTDIR}/prepareVDVreads_args.R \
+          -inputVDVfasta={input.VDVfasta} \
+          -outputVDVfasta={output.outVDVfasta} \
+          -outputVDVjunctions={output.VDVjunctions} \
+          -FilterOutputfasta={params.FilterOutputfasta} \
+          -blastvec={input.blastvec} \
+          -RestrictionSite={params.RestrictionSite} \
+          -VectorSequence={params.vectorSequence} \
+          -UnalignedVectorLength={params.UnalignedVectorLength} \
+          -SideSeqSearch={params.SideSeqSearch} \
+          -Ncores={threads} \
+        >> {log} 2>&1
+        """
+
+# Obtain random samples of VDV reads
+
+# Select long VD reads for polishing
+
+# Obtain fastq of long VD Reads
+
+# Convert long VD reads fastq to fasta
+
+# Compress long VD fastq
+
+# Align VDV random samples
+
+# Obtain consensus from alignment of VDV reads random samples
+
+# Align consensus obtained from VDV reads random samples
+
+# Obtain final consensus from multiple alignment
+
+# Polish consensus (2 rounds)

@@ -5,4 +5,5 @@
     "VectorFasta": "/N/project/NOR/Bank/pBeloBAC11_KanR_v2_rotated.fa",
     "GeneAFasta": "/N/project/NOR/Bank/18S_rDNA_Col-0_consensus.fa",
     "GeneBFasta": "/N/project/NOR/Bank/25S_rDNA_Col-0_consensus.fa",
+    "RestrictionSite": "G^AATTC",
 }
