@@ -31,7 +31,8 @@ rule all:
         expand("SelectedReads/VDV/{sample}_SelectedVDVreads.fq.gz", sample=SAMPLENAME),
         expand("SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa", sample=SAMPLENAME),
         expand("SelectedReads/VDVprepared/RandomSamples/{sample}_RS{NUM}.fa", sample=SAMPLENAME, NUM = RNDSETS),
-        expand("align/kalign/VDVrndSets/{sample}_RS{NUM}.msf", sample=SAMPLENAME, NUM=RNDSETS)
+        expand("align/kalign/VDVrndSets/{sample}_RS{NUM}.msf", sample=SAMPLENAME, NUM=RNDSETS),
+        expand("align/kalign/VDVrndSets/{sample}_RS{NUM}_cons.fa", sample=SAMPLENAME, NUM=RNDSETS)
 
 # Create a table with new names and old names
 rule Read_NameMapping:
@@ -515,8 +516,29 @@ rule Kalign_RandomSetsOfVDVreads:
         """
 
 # Obtain consensus from alignment of VDV reads random samples
+rule consensus_VDVrandomSets:
+    message: "Obtaining consensus sequence from multiple alignment of random sets of VDV reads"
+    input:
+        "align/kalign/VDVrndSets/{sample}_RS{NUM}.msf"
+    output:
+        "align/kalign/VDVrndSets/{sample}_RS{NUM}_cons.fa"
+    params:
+        consName = "cons_{sample}_RS{NUM}"
+    log:
+        "log/{sample}_rndsetConsensus_RS{NUM}.log"
+    threads: 1
+    shell:
+        """
+        Rscript {SCRIPTDIR}/getNanoBACconsensus.R \
+          -msfFile={input} \
+          -outputfile={output} \
+          -consName={params.consName} \
+        >> {log} 2>&1
+        """
 
 # Align consensus obtained from VDV reads random samples
+# rule align_consensus_VDVrandomSets:
+#     message: ""
 
 # Obtain final consensus from multiple alignment
 
