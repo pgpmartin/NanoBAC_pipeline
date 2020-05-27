@@ -1,0 +1,13 @@
+name: NanoBAC
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - blast=2.9.0
+  - kalign2=2.04
+  - minimap2=2.17
+  - python=3.6.10
+  - samtools=1.9
+  - seqtk=1.3
+  - snakemake=5.3.0

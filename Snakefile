@@ -3,12 +3,14 @@ configfile:
 
 shell.executable("/bin/bash")
 
-# SAMPLENAME = config['sampleName']
+localrules: all, Rename_Reads, RenamedReads_fq2fa, ReadLengthTable, AlignVector, AlignGeneA, AlignGeneB, Annotate_Reads, Select_VDVreads, Get_VDV_fastq, VDV_fastq2fasta, Prepare_VDV_reads, RandomSampling_VDVreads
+
 WORKDIR = config['workingDIR']
 LOGDIR = WORKDIR+"/log"
 SCRIPTDIR = config['scriptDIR']
 SAMPLENAME, = glob_wildcards(WORKDIR+"/data/raw/{id}.fastq")
-
+NUMRNDSET = config['VDVreadsNumberOfRandomSets']
+RNDSETS = list(range(1, int(NUMRNDSET)+1))
 #modules
 #import os.path
 
@@ -27,7 +29,9 @@ rule all:
         expand("SelectedReads/VDV/{sample}_SelectedVDVreads.rds", sample=SAMPLENAME),
         expand("SelectedReads/VDV/{sample}_SelectedVDVreads.fa", sample=SAMPLENAME),
         expand("SelectedReads/VDV/{sample}_SelectedVDVreads.fq.gz", sample=SAMPLENAME),
-        expand("SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa", sample=SAMPLENAME)
+        expand("SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa", sample=SAMPLENAME),
+        expand("SelectedReads/VDVprepared/RandomSamples/{sample}_RS{NUM}.fa", sample=SAMPLENAME, NUM = RNDSETS),
+        expand("align/kalign/VDVrndSets/{sample}_RS{NUM}.msf", sample=SAMPLENAME, NUM=RNDSETS)
 
 # Create a table with new names and old names
 rule Read_NameMapping:
@@ -38,6 +42,7 @@ rule Read_NameMapping:
         "tables/ReadNames/{sample}_ReadNameTable.tsv"
     params:
         sampleName = "{sample}"
+    threads: 1
     shell:
         """
         cat {input} | \
@@ -81,6 +86,7 @@ rule Compress_Renamed_FastQ:
     message: "Compressing {input}"
     input: "data/renamed/{sample}.fq"
     output: "data/renamed/{sample}.fq.gz"
+    threads: 1
     shell: " gzip -c {input} > {output} "
 
 
@@ -108,6 +114,8 @@ rule CreateBlastDatabase:
         "align/Blast/db/{sample}_blastdb.nhr"
     log:
         "log/{sample}_makeblastdb.log"
+    threads: 1
+    conda: "envs/blast.yaml"
     shell:
         """
         outbase={output}
@@ -128,6 +136,8 @@ rule AlignVector:
         db = "align/Blast/db/{sample}_blastdb.nhr"
     output:
         "align/Blast/results/{sample}_vectorblast.res"
+    threads: 1
+    conda: "envs/blast.yaml"
     shell:
         """
         dbbase={input.db}
@@ -163,6 +173,8 @@ rule AlignGeneA:
         db = "align/Blast/db/{sample}_blastdb.nhr"
     output:
         "align/Blast/results/{sample}_geneAblast.res"
+    threads: 1
+    conda: "envs/blast.yaml"
     shell:
         """
         dbbase={input.db}
@@ -184,6 +196,8 @@ rule AlignGeneB:
         db = "align/Blast/db/{sample}_blastdb.nhr"
     output:
         "align/Blast/results/{sample}_geneBblast.res"
+    threads: 1
+    conda: "envs/blast.yaml"
     shell:
         """
         dbbase={input.db}
@@ -207,6 +221,7 @@ rule Align2Host:
         temp("align/minimap2/host/{sample}.sam")
     log:
         "log/{sample}_hostalign.log"
+    conda: "envs/minimap2.yaml"
     threads: 4
     shell:
         """
@@ -227,6 +242,8 @@ rule Hostsam2paf:
         "align/minimap2/host/{sample}.sam"
     output:
         "align/minimap2/host/{sample}.paf"
+    threads: 1
+    conda: "envs/minimap2.yaml"
     shell:
         """
         paftools.js sam2paf -p {input} > {output}
@@ -241,6 +258,8 @@ rule HostAlignStats:
         sampleName = "{sample}"
     output:
         "align/minimap2/host/{sample}_alignment.stats"
+    threads: 1
+    conda: "envs/samtools.yaml"
     shell:
         """
         TotalAlignments=$(samtools view -c {input})
@@ -275,6 +294,7 @@ rule Filter_HostAlignment_SAM2BAM:
     output:
         "align/minimap2/host/{sample}.bam"
     threads: 4
+    conda: "envs/samtools.yaml"
     shell:
         """
         samtools view \
@@ -304,6 +324,7 @@ rule Annotate_Reads:
         "tables/ReadClass/{sample}_ReadClass.rds"
     log:
         "log/{sample}_AnnotateReads.log"
+    threads: 1
     shell:
         """
         Rscript {SCRIPTDIR}/AnnotateBACreads_args.R \
@@ -342,6 +363,7 @@ rule Select_VDVreads:
         outVDVnames = "SelectedReads/VDV/{sample}_SelectedVDVreadNames.tsv"
     log:
         "log/{sample}_VDVreadSelection.log"
+    threads: 1
     shell:
         """
         Rscript {SCRIPTDIR}/selectVDVreads_args.R \
@@ -369,6 +391,8 @@ rule Get_VDV_fastq:
         VDVselection = "SelectedReads/VDV/{sample}_SelectedVDVreadNames.tsv"
     output:
         temp("SelectedReads/VDV/{sample}_SelectedVDVreads.fq")
+    conda: "envs/seqtk.yaml"
+    threads: 1
     shell:
         """
         seqtk subseq \
@@ -394,6 +418,7 @@ rule gzip_VDV_fastq:
     message: "Compress VDV reads fastq"
     input: "SelectedReads/VDV/{sample}_SelectedVDVreads.fq"
     output: "SelectedReads/VDV/{sample}_SelectedVDVreads.fq.gz"
+    threads: 1
     shell: "gzip -c {input} > {output}"
 
 # Prepare VDV reads for multiple sequence alignments (by replacing the vector sequence)
@@ -431,6 +456,69 @@ rule Prepare_VDV_reads:
         """
 
 # Obtain random samples of VDV reads
+rule RandomSampling_VDVreads:
+    message: "Obtaining random samples of prepared VDV reads"
+    input:
+        "SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa"
+    params:
+        sampleName = "{sample}",
+        NumSeqPerSample = config['VDVreadsNumberOfSequencesPerRndSample'],
+        NumRndSample = NUMRNDSET
+    output:
+        expand("SelectedReads/VDVprepared/RandomSamples/{{sample}}_RS{NUM}.fa", NUM = RNDSETS)
+    log:
+        "log/{sample}_VDVreadsRandomSampling.log"
+    conda: "envs/seqtk.yaml"
+    threads: 1
+    shell:
+        """
+        fastafile={input} \
+        sampleName={params.sampleName} \
+        outDIR=$(dirname {output[0]}) \
+        NumRndSample={params.NumRndSample} \
+        NumSeqPerSample={params.NumSeqPerSample} \
+        {SCRIPTDIR}/MakeRandomSamplesFromFasta.sh \
+        >> {log} 2>&1
+        """
+## Another option for this rule is to use dynamic files. See https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html
+## it would allow to not throw an error at less than 20 VDV reads (not sure it's a good thing though??)
+## However that my make downstream rules complicated (not knowing the number of input files)
+
+
+# Align VDV random samples
+rule Kalign_RandomSetsOfVDVreads:
+    message: "Aligning random samples of VDV reads"
+    input:
+        "SelectedReads/VDVprepared/RandomSamples/{sample}_RS{NUM}.fa"
+    params:
+        gapopen = 55,
+        gapextension = 8.5,
+        teminalgap = 4.5,
+        matrixbonus = 0.2
+    output:
+        "align/kalign/VDVrndSets/{sample}_RS{NUM}.msf"
+    log:
+        "log/{sample}_kalign_RS{NUM}.log"
+    conda: "envs/kalign2.yaml"
+    threads: 1
+    shell:
+        """
+        kalign \
+            -dna \
+            -gapopen {params.gapopen} \
+            -gpe {params.gapextension} \
+            -tgpe {params.teminalgap} \
+            -bonus {params.matrixbonus} \
+            -infile {input} \
+            -outfile {output} \
+            -format msf
+        """
+
+# Obtain consensus from alignment of VDV reads random samples
+
+# Align consensus obtained from VDV reads random samples
+
+# Obtain final consensus from multiple alignment
 
 # Select long VD reads for polishing
 
@@ -440,12 +528,6 @@ rule Prepare_VDV_reads:
 
 # Compress long VD fastq
 
-# Align VDV random samples
-
-# Obtain consensus from alignment of VDV reads random samples
-
-# Align consensus obtained from VDV reads random samples
-
-# Obtain final consensus from multiple alignment
-
 # Polish consensus (2 rounds)
+
+# Move snakejob files to log folder

@@ -1,0 +1,6 @@
+name: kalign2
+channels:
+  - bioconda
+dependencies:
+  - kalign2=2.04
+
