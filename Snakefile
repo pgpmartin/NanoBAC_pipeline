@@ -298,12 +298,19 @@ rule Filter_HostAlignment_SAM2BAM:
     conda: "envs/samtools.yaml"
     shell:
         """
+        if [ "{threads}" -ge 2 ];
+        then
+          sortthreads="-@ $(( {threads} - 1 ))"
+        else
+          sortthreads=""
+        fi
+
         samtools view \
           -bh \
           -F 260 \
           {input} | \
         samtools sort \
-          -@ {threads} \
+          ${sortthreads} \
           -o {output}
         """
 
