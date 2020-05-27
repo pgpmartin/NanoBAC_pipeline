@@ -50,4 +50,9 @@
         "time": "08:00:00",
         "mem": "6G",
     },
+    "align_consensus_VDVrandomSets":
+    {
+        "time": "08:00:00",
+        "mem": "6G",
+    },
 }

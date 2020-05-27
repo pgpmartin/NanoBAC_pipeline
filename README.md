@@ -2,7 +2,7 @@
 
 ## Preparing to run the pipeline  
 
-First create the NanoBAC pipeline
+First create the NanoBAC conda environment
 ```bash
 conda env create -f NanoBAC.yml
 ```
@@ -75,7 +75,23 @@ BACproject
 
 ## Running the pipeline  
 
-For PBS/Torque:
+In all cases activate your conda environment and make sure R is in your path with the NanoBAC package installed:
+```bash
+source activate NanoBAC
+which R #check that R is installed
+```
+
+
+Run locally (or interactively on a cluster node) using 4 threads:
+```bash
+snakemake \
+  -j 4 \
+  --use-conda \
+  --conda-prefix /N/slate/pascmart/PROJECTS/TestBACseq/myenvs
+```
+
+
+Run on a cluster using **PBS/Torque** scheduler:
 ```bash
 snakemake \
   -j 100 \
@@ -85,7 +101,7 @@ snakemake \
   --cluster "qsub -l nodes=1:ppn={threads},walltime={cluster.time},mem={cluster.mem},vmem={cluster.mem} -o {cluster.logfolder} -e {cluster.logfolder}"
 ```
 
-For SLURM:
+Run on a cluster using **SLURM** scheduler:
 ```bash
 snakemake \
   -j 100 \
@@ -94,3 +110,5 @@ snakemake \
   --conda-prefix /N/slate/pascmart/PROJECTS/TestBACseq/myenvs \
   --cluster "sbatch -o {cluster.logfolder} -e {cluster.logfolder} --mem-per-cpu={cluster.mem} --time={cluster.time} --ntasks=1 --cpus-per-task={threads}"
 ```
+
+If running Snakemake in an interactive session and submitting batch job, it may be necessary to add the option `--latency-wait 120 all` as explained [here](https://hpc.nih.gov/apps/snakemake.html).

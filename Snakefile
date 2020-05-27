@@ -3,7 +3,7 @@ configfile:
 
 shell.executable("/bin/bash")
 
-localrules: all, Rename_Reads, RenamedReads_fq2fa, ReadLengthTable, AlignVector, AlignGeneA, AlignGeneB, Annotate_Reads, Select_VDVreads, Get_VDV_fastq, VDV_fastq2fasta, Prepare_VDV_reads, RandomSampling_VDVreads
+localrules: all, Rename_Reads, RenamedReads_fq2fa, ReadLengthTable, AlignVector, AlignGeneA, AlignGeneB, Annotate_Reads, Select_VDVreads, Get_VDV_fastq, VDV_fastq2fasta, Prepare_VDV_reads, RandomSampling_VDVreads, consensus_VDVrandomSets, consensus_fromVDVcons
 
 WORKDIR = config['workingDIR']
 LOGDIR = WORKDIR+"/log"
@@ -32,7 +32,9 @@ rule all:
         expand("SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa", sample=SAMPLENAME),
         expand("SelectedReads/VDVprepared/RandomSamples/{sample}_RS{NUM}.fa", sample=SAMPLENAME, NUM = RNDSETS),
         expand("align/kalign/VDVrndSets/{sample}_RS{NUM}.msf", sample=SAMPLENAME, NUM=RNDSETS),
-        expand("align/kalign/VDVrndSets/{sample}_RS{NUM}_cons.fa", sample=SAMPLENAME, NUM=RNDSETS)
+        expand("align/kalign/VDVrndSets/{sample}_RS{NUM}_cons.fa", sample=SAMPLENAME, NUM=RNDSETS),
+        expand("align/kalign/ConsFromVDV/{sample}_consAlign.msf", sample=SAMPLENAME),
+        expand("consensusSeq/{sample}_InitialConsensus.fa", sample=SAMPLENAME)
 
 # Create a table with new names and old names
 rule Read_NameMapping:
@@ -137,8 +139,10 @@ rule AlignVector:
         db = "align/Blast/db/{sample}_blastdb.nhr"
     output:
         "align/Blast/results/{sample}_vectorblast.res"
-    threads: 1
+    log:
+        "log/{sample}_blastVector.log"
     conda: "envs/blast.yaml"
+    threads: 1
     shell:
         """
         dbbase={input.db}
@@ -149,7 +153,8 @@ rule AlignVector:
           -db ${{dbbase}} \
           -out {output} \
           -outfmt 6 \
-          -num_alignments 100000000
+          -num_alignments 100000000 \
+        >> {log} 2>&1
         """
 
 # Check for the presence of data for geneA
@@ -174,8 +179,10 @@ rule AlignGeneA:
         db = "align/Blast/db/{sample}_blastdb.nhr"
     output:
         "align/Blast/results/{sample}_geneAblast.res"
-    threads: 1
+    log:
+        "log/{sample}_blastGeneA.log"
     conda: "envs/blast.yaml"
+    threads: 1
     shell:
         """
         dbbase={input.db}
@@ -186,7 +193,8 @@ rule AlignGeneA:
           -db ${{dbbase}} \
           -out {output} \
           -outfmt 6 \
-          -num_alignments 100000000
+          -num_alignments 100000000 \
+        >> {log} 2>&1
         """
 
 # Align to gene B
@@ -197,8 +205,10 @@ rule AlignGeneB:
         db = "align/Blast/db/{sample}_blastdb.nhr"
     output:
         "align/Blast/results/{sample}_geneBblast.res"
-    threads: 1
+    log:
+        "log/{sample}_blastGeneB.log"
     conda: "envs/blast.yaml"
+    threads: 1
     shell:
         """
         dbbase={input.db}
@@ -209,7 +219,8 @@ rule AlignGeneB:
           -db ${{dbbase}} \
           -out {output} \
           -outfmt 6 \
-          -num_alignments 100000000
+          -num_alignments 100000000 \
+        >> {log} 2>&1
         """
 
 # Align to host genome
@@ -233,7 +244,7 @@ rule Align2Host:
           {input.hostGenome} \
           {input.reads} > \
           {output} \
-          2> {log}
+        >> {log} 2>&1
         """
 
 # Convert to paf (only convert the primary and supplementary alignments with the -p argument )
@@ -520,6 +531,7 @@ rule Kalign_RandomSetsOfVDVreads:
             -infile {input} \
             -outfile {output} \
             -format msf
+        >> {log} 2>&1
         """
 
 # Obtain consensus from alignment of VDV reads random samples
@@ -532,7 +544,7 @@ rule consensus_VDVrandomSets:
     params:
         consName = "cons_{sample}_RS{NUM}"
     log:
-        "log/{sample}_rndsetConsensus_RS{NUM}.log"
+        "log/{sample}_ConsensusVDVRndSet_RS{NUM}.log"
     threads: 1
     shell:
         """
@@ -543,20 +555,92 @@ rule consensus_VDVrandomSets:
         >> {log} 2>&1
         """
 
-# Align consensus obtained from VDV reads random samples
-# rule align_consensus_VDVrandomSets:
-#     message: ""
+# Align consensus obtained from random sets of VDV reads
+rule align_consensus_VDVrandomSets:
+    message: "Align consensus from multiple alignment of random sets of VDV reads"
+    input:
+        expand("align/kalign/VDVrndSets/{{sample}}_RS{NUM}_cons.fa", NUM=RNDSETS)
+    params:
+        gapopen = 55,
+        gapextension = 8.5,
+        teminalgap = 4.5,
+        matrixbonus = 0.2
+    output:
+        "align/kalign/ConsFromVDV/{sample}_consAlign.msf"
+    log:
+        "log/{sample}_consAlign.log"
+    conda: "envs/kalign2.yaml"
+    threads: 1
+    shell:
+        """
+        cat {input} | \
+        kalign \
+            -dna \
+            -gapopen {params.gapopen} \
+            -gpe {params.gapextension} \
+            -tgpe {params.teminalgap} \
+            -bonus {params.matrixbonus} \
+            -outfile {output} \
+            -format msf
+        >> {log} 2>&1
+        """
 
 # Obtain final consensus from multiple alignment
+# rule consensus_fromVDVcons:
+#     input:
+#         "align/kalign/ConsFromVDV/{sample}_consAlign.msf"
+#     output:
+#         "consensusSeq/{sample}_InitialConsensus.fa"
+#     params:
+#         consName = "cons_{sample}"
+#     log:
+#         "log/{sample}_ConsensusFromVDVcons.log"
+#     threads: 1
+#     shell:
+#         """
+#         Rscript {SCRIPTDIR}/getNanoBACconsensus.R \
+#           -msfFile={input} \
+#           -outputfile={output} \
+#           -consName={params.consName} \
+#         >> {log} 2>&1
+#         """
+
 
 # Select long VD reads for polishing
+# rule Select_longVDreads:
+#     message: "Selecting long VD reads"
+#     input:
+#         "tables/ReadClass/{sample}_ReadClass.rds"
+#     params:
+#         WithGeneA = True,
+#         WithGeneB = True,
+#         minLength = 40000
+#     output:
+#         outRDS = "SelectedReads/longVD/{sample}_SelectedLongVDreads.rds",
+#         outReadNames = "SelectedReads/longVD/{sample}SelectedLongVDreadNames.tsv"
+#     log:
+#         "log/{sample}_VDVreadSelection.log"
+#     threads: 1
+#     shell:
+#         """
+#         Rscript {SCRIPTDIR}/selectlongVDreads_args.R \
+#           -ReadClass={input} \
+#           -WithGeneA={params.WithGeneA} \
+#           -WithGeneB={params.WithGeneB} \
+#           -outRDS={output.outRDS} \
+#           -outReadNames={output.outReadNames} \
+#         >> {log} 2>&1
+#         """
+
 
 # Obtain fastq of long VD Reads
+    # temp(SelectedReads/longVD/{sample}_SelectedLongVDreads.fq)
 
 # Convert long VD reads fastq to fasta
+    # SelectedReads/longVD/{sample}_SelectedLongVDreads.fa
 
 # Compress long VD fastq
+    # SelectedReads/longVD/{sample}_SelectedLongVDreads.fq.gz
 
 # Polish consensus (2 rounds)
-
-# Move snakejob files to log folder
+    #final assembly/
