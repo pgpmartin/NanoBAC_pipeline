@@ -5,19 +5,49 @@
         "time": "00:20:00",
         "logfolder": "log",
     },
+    "CreateBlastDatabase":
+    {
+        "time": "02:00:00",
+        "mem": "4G",
+    },
+    "AlignVector":
+    {
+        "time": "01:00:00",
+        "mem": "4G",
+    },
+    "AlignGeneA":
+    {
+        "time": "01:00:00",
+        "mem": "4G",
+    },
+    "AlignGeneB":
+    {
+        "time": "01:00:00",
+        "mem": "4G",
+    },
     "Align2Host":
     {
         "time": "02:00:00",
-        "mem": "2G",
+        "mem": "4G",
     },
-    "Prepare_VDV_reads":
+    "Hostsam2paf":
     {
         "time": "02:00:00",
-        "mem": "2G",
+        "mem": "4G",
+    },
+    "HostAlignStats":
+    {
+        "time": "02:00:00",
+        "mem": "4G",
+    },
+    "Filter_HostAlignment_SAM2BAM":
+    {
+        "time": "01:00:00",
+        "mem": "4G",
     },
     "Kalign_RandomSetsOfVDVreads":
     {
-        "time": "04:00:00",
+        "time": "08:00:00",
         "mem": "6G",
     },
 }

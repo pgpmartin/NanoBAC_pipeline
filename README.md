@@ -31,15 +31,46 @@ Create a folder in which the scripts will be placed:
 ```bash
 mkdir -p ${projPath}/scripts
 ```
-Place the content of the `scripts/` folder in this folder and edit the config.json file to indicate the location of this script folder 
+Place the content of the `NanoBAC_pipeline/scripts/` folder in this folder and edit the `config.json` file to indicate the location of this script folder 
 
 
-Create a folder for your first BAC with the subdirectories `raw/` and `log`  
+Create a folder for your first BAC `myFirstBAC` with the subdirectories `raw/` and `log/`  
 ```
 mkdir -p ${projPath}/myFirstBAC/raw
 mkdir -p ${projPath}/myFirstBAC/log
 ```
 In the `raw/` subdirectory, place the fastq file with your Nanopore reads for your BAC sequencing experiment (format must be: `sampleName.fastq` where `sampleName` is replaced by the actual name of your sample)  
+
+In the `myFirstBAC` directory, place the following files:  
+
+  - `Snakefile`  
+  - `config.json` (edit to your need)  
+  - `cluster.json`  
+  - `envs/` folder with all its content (`*.yaml` files)  
+  
+Your folder should look something like this:
+```
+BACproject
+├── BAC01
+│   ├── cluster.json
+│   ├── config.json
+│   ├── envs
+│   │   ├── blast.yaml
+│   │   ├── kalign2.yaml
+│   │   ├── minimap2.yaml
+│   │   ├── samtools.yaml
+│   │   └── seqtk.yaml
+│   ├── log
+│   ├── raw
+│   │   └── BAC01.fastq
+│   └── Snakefile
+├── myenvs
+└── scripts
+    ├── AnnotateBACreads_args.R
+    ├── MakeRandomSamplesFromFasta.sh
+    ├── prepareVDVreads_args.R
+    └── selectVDVreads_args.R
+```
 
 
 ## Running the pipeline  
