@@ -586,24 +586,24 @@ rule align_consensus_VDVrandomSets:
         """
 
 # Obtain final consensus from multiple alignment
-# rule consensus_fromVDVcons:
-#     input:
-#         "align/kalign/ConsFromVDV/{sample}_consAlign.msf"
-#     output:
-#         "consensusSeq/{sample}_InitialConsensus.fa"
-#     params:
-#         consName = "cons_{sample}"
-#     log:
-#         "log/{sample}_ConsensusFromVDVcons.log"
-#     threads: 1
-#     shell:
-#         """
-#         Rscript {SCRIPTDIR}/getNanoBACconsensus.R \
-#           -msfFile={input} \
-#           -outputfile={output} \
-#           -consName={params.consName} \
-#         >> {log} 2>&1
-#         """
+rule consensus_fromVDVcons:
+    input:
+        "align/kalign/ConsFromVDV/{sample}_consAlign.msf"
+    output:
+        "consensusSeq/{sample}_InitialConsensus.fa"
+    params:
+        consName = "cons_{sample}"
+    log:
+        "log/{sample}_ConsensusFromVDVcons.log"
+    threads: 1
+    shell:
+        """
+        Rscript {SCRIPTDIR}/getNanoBACconsensus.R \
+          -msfFile={input} \
+          -outputfile={output} \
+          -consName={params.consName} \
+        >> {log} 2>&1
+        """
 
 
 # Select long VD reads for polishing
