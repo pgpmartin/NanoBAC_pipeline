@@ -7,7 +7,7 @@
     },
     "CreateBlastDatabase":
     {
-        "time": "02:00:00",
+        "time": "00:30:00",
         "mem": "4G",
     },
     "AlignVector":
@@ -27,17 +27,17 @@
     },
     "Align2Host":
     {
-        "time": "02:00:00",
+        "time": "00:45:00",
         "mem": "4G",
     },
     "Hostsam2paf":
     {
-        "time": "02:00:00",
+        "time": "00:30:00",
         "mem": "4G",
     },
     "HostAlignStats":
     {
-        "time": "02:00:00",
+        "time": "00:30:00",
         "mem": "4G",
     },
     "Filter_HostAlignment_SAM2BAM":

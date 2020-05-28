@@ -3,7 +3,9 @@ configfile:
 
 shell.executable("/bin/bash")
 
-localrules: all, Rename_Reads, RenamedReads_fq2fa, ReadLengthTable, AlignVector, AlignGeneA, AlignGeneB, Annotate_Reads, Select_VDVreads, Get_VDV_fastq, VDV_fastq2fasta, Prepare_VDV_reads, RandomSampling_VDVreads, consensus_VDVrandomSets, consensus_fromVDVcons
+localrules: all, Rename_Reads, RenamedReads_fq2fa, ReadLengthTable, AlignVector, AlignGeneA,
+            AlignGeneB, Annotate_Reads, Select_VDVreads, selRead_Get_fastq, selRead_fastq2fasta, Prepare_VDV_reads,
+            RandomSampling_VDVreads, consensus_VDVrandomSets, consensus_fromVDVcons, Select_longVDreads
 
 WORKDIR = config['workingDIR']
 LOGDIR = WORKDIR+"/log"
@@ -26,15 +28,19 @@ rule all:
         expand("align/Blast/results/{sample}_geneBblast.res", sample=SAMPLENAME),
         expand("align/minimap2/host/{sample}.paf", sample=SAMPLENAME),
         expand("align/minimap2/host/{sample}_alignment.stats", sample=SAMPLENAME),
-        expand("SelectedReads/VDV/{sample}_SelectedVDVreads.rds", sample=SAMPLENAME),
-        expand("SelectedReads/VDV/{sample}_SelectedVDVreads.fa", sample=SAMPLENAME),
-        expand("SelectedReads/VDV/{sample}_SelectedVDVreads.fq.gz", sample=SAMPLENAME),
+        expand("SelectedReads/VDV/{sample}_Sel_VDV.rds", sample=SAMPLENAME),
+        expand("SelectedReads/VDV/{sample}_Sel_VDV.fa", sample=SAMPLENAME),
+        expand("SelectedReads/VDV/{sample}_Sel_VDV.fq.gz", sample=SAMPLENAME),
         expand("SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa", sample=SAMPLENAME),
         expand("SelectedReads/VDVprepared/RandomSamples/{sample}_RS{NUM}.fa", sample=SAMPLENAME, NUM = RNDSETS),
         expand("align/kalign/VDVrndSets/{sample}_RS{NUM}.msf", sample=SAMPLENAME, NUM=RNDSETS),
         expand("align/kalign/VDVrndSets/{sample}_RS{NUM}_cons.fa", sample=SAMPLENAME, NUM=RNDSETS),
         expand("align/kalign/ConsFromVDV/{sample}_consAlign.msf", sample=SAMPLENAME),
-        expand("consensusSeq/{sample}_InitialConsensus.fa", sample=SAMPLENAME)
+        expand("consensusSeq/{sample}_InitialConsensus.fa", sample=SAMPLENAME),
+        expand("SelectedReads/longVD/{sample}_Sel_longVD.rds", sample=SAMPLENAME),
+        expand("SelectedReads/longVD/{sample}_Sel_longVD.fa", sample=SAMPLENAME),
+        expand("SelectedReads/longVD/{sample}_Sel_longVD.fq.gz", sample=SAMPLENAME)
+
 
 # Create a table with new names and old names
 rule Read_NameMapping:
@@ -62,7 +68,7 @@ rule Rename_Reads:
     params:
         sampleName = "{sample}"
     output:
-        temp("data/renamed/{sample}.fq")
+        "data/renamed/{sample}.fq"
     shell:
         """
         cat {input} | \
@@ -157,20 +163,6 @@ rule AlignVector:
         >> {log} 2>&1
         """
 
-# Check for the presence of data for geneA
-# rule check_GeneA_exists:
-#         message: "Check that GeneA is used"
-#         input:
-#             geneA=config['GeneAFasta']
-#         shell:
-#             """
-#             if [[ ! -z {geneA} ]]
-#             then
-#                 touch .GeneAPresent
-#             else
-#                 touch .GeneAAbsent # maybe touch align/Blast/results/{sample}_geneAblast.res
-#             """
-
 # Align to gene A
 rule AlignGeneA:
     message: "Aligning GeneA on the reads {input}"
@@ -243,8 +235,7 @@ rule Align2Host:
           -L \
           {input.hostGenome} \
           {input.reads} > \
-          {output} \
-        >> {log} 2>&1
+          {output}
         """
 
 # Convert to paf (only convert the primary and supplementary alignments with the -p argument )
@@ -378,10 +369,10 @@ rule Select_VDVreads:
         plotFormat = "png"
     output:
         outPlot = "Plots/{sample}_VDVreadSelection.png",
-        outRDS = "SelectedReads/VDV/{sample}_SelectedVDVreads.rds",
-        outVDVnames = "SelectedReads/VDV/{sample}_SelectedVDVreadNames.tsv"
+        outRDS = "SelectedReads/VDV/{sample}_Sel_VDV.rds",
+        outVDVnames = "SelectedReads/VDV/{sample}_Sel_VDV_ReadNames.tsv"
     log:
-        "log/{sample}_VDVreadSelection.log"
+        "log/{sample}_Sel_VDV_Selection.log"
     threads: 1
     shell:
         """
@@ -403,48 +394,48 @@ rule Select_VDVreads:
         """
 
 # Obtain fastq of VDV Reads
-rule Get_VDV_fastq:
-    message: "Obtain fastq file of selected VDV reads"
-    input:
-        rawfastq = "data/renamed/{sample}.fq",
-        VDVselection = "SelectedReads/VDV/{sample}_SelectedVDVreadNames.tsv"
-    output:
-        temp("SelectedReads/VDV/{sample}_SelectedVDVreads.fq")
-    conda: "envs/seqtk.yaml"
-    threads: 1
-    shell:
-        """
-        seqtk subseq \
-            {input.rawfastq} \
-            {input.VDVselection} > \
-            {output}
-        """
+# rule Get_VDV_fastq:
+#     message: "Obtain fastq file of selected VDV reads"
+#     input:
+#         rawfastq = "data/renamed/{sample}.fq",
+#         VDVselection = "SelectedReads/VDV/{sample}_Sel_VDV_ReadNames.tsv"
+#     output:
+#         temp("SelectedReads/VDV/{sample}_Sel_VDV.fq")
+#     conda: "envs/seqtk.yaml"
+#     threads: 1
+#     shell:
+#         """
+#         seqtk subseq \
+#             {input.rawfastq} \
+#             {input.VDVselection} > \
+#             {output}
+#         """
 
 # Convert VDV fastq to fasta
-rule VDV_fastq2fasta:
-    message: "Convert VDV reads fastq to fasta"
-    input:
-        "SelectedReads/VDV/{sample}_SelectedVDVreads.fq"
-    output:
-        "SelectedReads/VDV/{sample}_SelectedVDVreads.fa"
-    shell:
-        """
-        sed -n '1~4s/^@/>/p;2~4p' {input} > {output}
-        """
+# rule VDV_fastq2fasta:
+#     message: "Convert VDV reads fastq to fasta"
+#     input:
+#         "SelectedReads/VDV/{sample}_SelectedVDVreads.fq"
+#     output:
+#         "SelectedReads/VDV/{sample}_SelectedVDVreads.fa"
+#     shell:
+#         """
+#         sed -n '1~4s/^@/>/p;2~4p' {input} > {output}
+#         """
 
 # Compress VDV fastq
-rule gzip_VDV_fastq:
-    message: "Compress VDV reads fastq"
-    input: "SelectedReads/VDV/{sample}_SelectedVDVreads.fq"
-    output: "SelectedReads/VDV/{sample}_SelectedVDVreads.fq.gz"
-    threads: 1
-    shell: "gzip -c {input} > {output}"
+# rule gzip_VDV_fastq:
+#     message: "Compress VDV reads fastq"
+#     input: "SelectedReads/VDV/{sample}_SelectedVDVreads.fq"
+#     output: "SelectedReads/VDV/{sample}_SelectedVDVreads.fq.gz"
+#     threads: 1
+#     shell: "gzip -c {input} > {output}"
 
 # Prepare VDV reads for multiple sequence alignments (by replacing the vector sequence)
 rule Prepare_VDV_reads:
     message: "Preparing VDV reads for alignment"
     input:
-        VDVfasta = "SelectedReads/VDV/{sample}_SelectedVDVreads.fa",
+        VDVfasta = "SelectedReads/VDV/{sample}_Sel_VDV.fa",
         blastvec = "align/Blast/results/{sample}_vectorblast.res"
     params:
         FilterOutputfasta = True,
@@ -501,8 +492,9 @@ rule RandomSampling_VDVreads:
         """
 ## Another option for this rule is to use dynamic files. See https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html
 ## it would allow to not throw an error at less than 20 VDV reads (not sure it's a good thing though??)
-## However that my make downstream rules complicated (not knowing the number of input files)
-
+## However that may make downstream rules more complicated (not knowing the number of input files)
+## dynamic-flag will be deprecated in Snakemake 6.0
+## It is thus recommended to use checkpoints instead: https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#data-dependent-conditional-execution
 
 # Align VDV random samples
 rule Kalign_RandomSetsOfVDVreads:
@@ -607,40 +599,125 @@ rule consensus_fromVDVcons:
 
 
 # Select long VD reads for polishing
-# rule Select_longVDreads:
-#     message: "Selecting long VD reads"
+rule Select_longVDreads:
+    message: "Selecting long VD reads"
+    input:
+        "tables/ReadClass/{sample}_ReadClass.rds"
+    params:
+        WithGeneA = True,
+        WithGeneB = True,
+        isHostAlign = False,
+        minLength = config['minVDreadLength']
+    output:
+        outRDS = "SelectedReads/longVD/{sample}_Sel_longVD.rds",
+        outReadNames = "SelectedReads/longVD/{sample}_Sel_longVD_ReadNames.tsv"
+    log:
+        "log/{sample}_Sel_longVD_Selection.log"
+    threads: 1
+    shell:
+        """
+        Rscript {SCRIPTDIR}/selectlongVDreads_args.R \
+          -ReadClass={input} \
+          -minLength={params.minLength} \
+          -WithGeneA={params.WithGeneA} \
+          -WithGeneB={params.WithGeneB} \
+          -isHostAlign={params.isHostAlign} \
+          -outRDS={output.outRDS} \
+          -outReadNames={output.outReadNames} \
+        >> {log} 2>&1
+        """
+
+# Obtain fastq of selected reads
+rule selRead_Get_fastq:
+    message: "Obtain fastq file of selected reads"
+    input:
+        rawfastq = "data/renamed/{sample}.fq",
+        ReadSelection = "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}_ReadNames.tsv"
+    output:
+        "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}.fq"
+    conda: "envs/seqtk.yaml"
+    threads: 1
+    shell:
+        """
+        seqtk subseq \
+            {input.rawfastq} \
+            {input.ReadSelection} > \
+            {output}
+        """
+# Convert fastq to fasta
+rule selRead_fastq2fasta:
+    message: "Convert fastq to fasta for selected reads"
+    input:
+        "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}.fq"
+    output:
+        "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}.fa"
+    shell:
+        """
+        sed -n '1~4s/^@/>/p;2~4p' {input} > {output}
+        """
+# gzip fastq for selected reads
+rule selRead_gzip_fastq:
+    message: "Compress fastq for selected reads"
+    input: "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}.fq"
+    output: "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}.fq.gz"
+    threads: 1
+    shell: "gzip -c {input} > {output}"
+
+
+# # Convert long VD reads fastq to fasta
+# rule longVD_fastq2fasta:
+#     message: "Convert long VD reads fastq to fasta"
+#     input:
+#         "SelectedReads/longVD/{sample}_SelectedLongVDreads.fq"
+#     output:
+#         "SelectedReads/longVD/{sample}_SelectedLongVDreads.fa"
+#     shell:
+#         """
+#         sed -n '1~4s/^@/>/p;2~4p' {input} > {output}
+#         """
+#
+# # Compress long VD fastq
+# rule gzip_longVD_fastq:
+#     message: "Compress long VD reads fastq"
+#     input: "SelectedReads/longVD/{sample}_SelectedLongVDreads.fq"
+#     output: "SelectedReads/longVD/{sample}_SelectedLongVDreads.fq.gz"
+#     threads: 1
+#     shell: "gzip -c {input} > {output}"
+
+# Select DVD reads (if any)
+# rule Select_DVDreads:
+#     message: "Selecting DVD reads"
 #     input:
 #         "tables/ReadClass/{sample}_ReadClass.rds"
 #     params:
 #         WithGeneA = True,
 #         WithGeneB = True,
-#         minLength = 40000
+#         isHostAlign = False,
+#         minLength = config['minVDreadLength']
 #     output:
-#         outRDS = "SelectedReads/longVD/{sample}_SelectedLongVDreads.rds",
-#         outReadNames = "SelectedReads/longVD/{sample}SelectedLongVDreadNames.tsv"
+#         outRDS = "SelectedReads/DVD/{sample}_SelectedDVDreads.rds",
+#         outReadNames = "SelectedReads/DVD/{sample}_SelectedDVDreadNames.tsv"
 #     log:
-#         "log/{sample}_VDVreadSelection.log"
+#         "log/{sample}_DVD_Selection.log"
 #     threads: 1
 #     shell:
 #         """
-#         Rscript {SCRIPTDIR}/selectlongVDreads_args.R \
+#         Rscript {SCRIPTDIR}/selectDVDreads_args.R \
 #           -ReadClass={input} \
+#           -minLength={params.minLength} \
 #           -WithGeneA={params.WithGeneA} \
 #           -WithGeneB={params.WithGeneB} \
+#           -isHostAlign={params.isHostAlign} \
 #           -outRDS={output.outRDS} \
 #           -outReadNames={output.outReadNames} \
 #         >> {log} 2>&1
 #         """
 
+# Split DVD reads at vector sequence and keep long fragments
 
-# Obtain fastq of long VD Reads
-    # temp(SelectedReads/longVD/{sample}_SelectedLongVDreads.fq)
+# Merge DVD reads with long VD reads
 
-# Convert long VD reads fastq to fasta
-    # SelectedReads/longVD/{sample}_SelectedLongVDreads.fa
+# Polish consensus round 1
 
-# Compress long VD fastq
-    # SelectedReads/longVD/{sample}_SelectedLongVDreads.fq.gz
-
-# Polish consensus (2 rounds)
+# Polish consensus round 2
     #final assembly/

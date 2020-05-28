@@ -17,7 +17,7 @@ devtools::install_github("pascmart/NanoBAC")
 
 Create a project folder, for example:
 ```bash
-projPath="/N/slate/pascmart/PROJECTS/TestBACseq"
+projPath="/DATA/BACproject"
 mkdir -p ${projPath}
 cd ${projPath}
 ```
