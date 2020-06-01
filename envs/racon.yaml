@@ -1,0 +1,6 @@
+name: minimap2
+channels:
+  - bioconda
+dependencies:
+  - racon=1.4.13
+

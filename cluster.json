@@ -55,4 +55,14 @@
         "time": "08:00:00",
         "mem": "6G",
     },
+    "align_VD_to_cons":
+    {
+        "time": "00:30:00",
+        "mem": "4G",
+    },
+    "racon_Polish":
+    {
+        "time": "00:30:00",
+        "mem": "4G",
+    },
 }

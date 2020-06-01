@@ -5,7 +5,8 @@ shell.executable("/bin/bash")
 
 localrules: all, Rename_Reads, RenamedReads_fq2fa, ReadLengthTable, AlignVector, AlignGeneA,
             AlignGeneB, Annotate_Reads, Select_VDVreads, selRead_Get_fastq, selRead_fastq2fasta, Prepare_VDV_reads,
-            RandomSampling_VDVreads, consensus_VDVrandomSets, consensus_fromVDVcons, Select_longVDreads, SelectSplit_DVDreads
+            RandomSampling_VDVreads, consensus_VDVrandomSets, consensus_fromVDVcons, Select_longVDreads, SelectSplit_DVDreads,
+            merge_VD_DV_reads, Polishing_step01, Polishing_step02
 
 WORKDIR = config['workingDIR']
 LOGDIR = WORKDIR+"/log"
@@ -40,7 +41,9 @@ rule all:
         expand("SelectedReads/longVD/{sample}_Sel_longVD.rds", sample=SAMPLENAME),
         expand("SelectedReads/longVD/{sample}_Sel_longVD.fa", sample=SAMPLENAME),
         expand("SelectedReads/longVD/{sample}_Sel_longVD.fq.gz", sample=SAMPLENAME),
-        expand("SelectedReads/DVD/{sample}_SelSplit_DVD.fa", sample=SAMPLENAME)
+        expand("SelectedReads/DVD/{sample}_SelSplit_DVD.fa", sample=SAMPLENAME),
+        expand("SelectedReads/{sample}_VDreadsForPolishing.fa", sample=SAMPLENAME),
+        expand("assembly/final_assembly_{sample}.fa", sample=SAMPLENAME)
 
 
 # Create a table with new names and old names
@@ -667,9 +670,87 @@ rule SelectSplit_DVDreads:
         >> {log} 2>&1
         """
 
-# Merge DVD reads with long VD reads
+# Merge DV/VD reads (from DVD reads) with long VD reads to use for polishing step
+rule merge_VD_DV_reads:
+    message: "Merging fasta files for VD/DV reads (used for polishing)"
+    input:
+        DVD = "SelectedReads/DVD/{sample}_SelSplit_DVD.fa",
+        VD = "SelectedReads/longVD/{sample}_Sel_longVD.fa"
+    output:
+        "SelectedReads/{sample}_VDreadsForPolishing.fa"
+    log:
+        "log/{sample}_Sel_VDreadsForPolishing.log"
+    shell:
+        """
+        cat {input.DVD} {input.VD} > {output}
+        NumReads=$(grep "^>" {output} | wc -l)
+        if (( NumReads == 0 )); then
+            printf "%s\\n" "Zero reads for polishing step" > {log}
+        else
+            printf "%s\\n" "Number of reads for polishing step: ${{NumReads}}" > {log}
+        fi
+        """
 
-# Polish consensus round 1
+# Align VDreads to consensus
+## TODO: evaluate if winnowmap (https://www.biorxiv.org/content/10.1101/2020.02.11.943241v1) instead of minimap2 gives better results at this step
+## TODO: check if/how minimap2 uses the base-level quality scores. If it makes a difference, input fastq instead of fasta
+rule align_VD_to_cons:
+    message: "Aligning VD reads to consensus"
+    input:
+        VDreads = "SelectedReads/{sample}_VDreadsForPolishing.fa",
+        consensus = "assembly/{sample}_{consensusType}.fa"
+    output:
+        "align/minimap2/polishing_{consensusType}/{sample}.paf"
+    log:
+        "log/{sample}_polishing_{consensusType}.log"
+    conda: "envs/minimap2.yaml"
+    threads: 4
+    shell:
+        """
+        minimap2 \
+          -x map-ont \
+          -t {threads} \
+          {input.consensus} \
+          {input.VDreads} > \
+          {output}
+        """
 
-# Polish consensus round 2
-    #final assembly/
+# Polish using racon
+rule racon_Polish:
+    message: "Polishing consensus using racon"
+    input:
+        VDreads = "SelectedReads/{sample}_VDreadsForPolishing.fa",
+        consensus = "assembly/{sample}_{consensusType}.fa",
+        VDalign = "align/minimap2/polishing_{consensusType}/{sample}.paf"
+    output:
+        "assembly/polishing/{sample}_{consensusType}_polished.fa"
+    conda: "envs/racon.yaml"
+    threads: 4
+    shell:
+        """
+        racon \
+            -t {threads} \
+            {input.VDreads} \
+            {input.VDalign} \
+            {input.consensus} > \
+            {output}
+        """
+
+# Define polishing step 01
+rule Polishing_step01:
+    message: "moving polished consensus"
+    input: "assembly/polishing/{sample}_InitialConsensus_polished.fa"
+    output: "assembly/{sample}_Polished01.fa"
+    shell: "mv {input} {output}"
+
+# Define polishing step 02
+# To stop the polishing loop, do not name the final assembly {sample}_{something}.fa 
+rule Polishing_step02:
+    message: "moving polished consensus"
+    input: "assembly/polishing/{sample}_Polished01_polished.fa"
+    output: "assembly/final_assembly_{sample}.fa"
+    shell:
+        """
+        mv {input} {output}
+        rmdir assembly/polishing
+        """
