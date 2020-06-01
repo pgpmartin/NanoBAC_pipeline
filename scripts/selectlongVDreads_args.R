@@ -47,7 +47,7 @@ if (file.exists(args$outRDS)) {
 }
 
 if (is.null(args$outReadNames)) {
-  stop("Please provide a path to output the list of VDV reads (outReadNames argument)")
+  stop("Please provide a path to output the list of long VD reads (outReadNames argument)")
 } else {
   outReadNames <- args$outReadNames
 }
@@ -93,14 +93,14 @@ if (is.null(selLongVD)) {
     avgInsertSize <- mean(selLongVD$LongestDNA, na.rm=TRUE)
     sdInsertSize <- sd(selLongVD$LongestDNA, na.rm=TRUE)
     message("\nNumber of long VD reads selected: ", Nreads)
-    message("Read Length (mean +/- sd): ", avgReadSize, " +/- ", sdReadSize)
-    message("Insert Length (mean +/- sd): ", avgInsertSize, " +/- ", sdInsertSize)
+    message("Read Length (mean +/- sd): ", round(avgReadSize,0), " +/- ", round(sdReadSize,0))
+    message("Insert Length (mean +/- sd): ", round(avgInsertSize,0), " +/- ", round(sdInsertSize,0))
 }
 
 ### Timing
 ###-----------------
-message("Processing Ended:", date(),"\n")
-message("Timing:\n")
+message("\nProcessing Ended:", date())
+message("Timing:")
 proc.time()-ptm
 
 # Done

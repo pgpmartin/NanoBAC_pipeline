@@ -12,7 +12,7 @@ Activate the environment using
 Then install R or make sure R (v>3.6) is in your PATH (e.g. `echo $PATH` and `which R`).    
 In R, install the NanoBAC package using the following command:
 ```r
-devtools::install_github("pascmart/NanoBAC")
+devtools::install_github("pgpmartin/NanoBAC")
 ```
 
 Create a project folder, for example:
@@ -34,12 +34,12 @@ mkdir -p ${projPath}/scripts
 Place the content of the `NanoBAC_pipeline/scripts/` folder in this folder and edit the `config.json` file to indicate the location of this script folder 
 
 
-Create a folder for your first BAC `myFirstBAC` with the subdirectories `raw/` and `log/`  
+Create a folder for your first BAC `myFirstBAC` with the subdirectories `data/raw/` and `log/`  
 ```
-mkdir -p ${projPath}/myFirstBAC/raw
+mkdir -p ${projPath}/myFirstBAC/data/raw
 mkdir -p ${projPath}/myFirstBAC/log
 ```
-In the `raw/` subdirectory, place the fastq file with your Nanopore reads for your BAC sequencing experiment (format must be: `sampleName.fastq` where `sampleName` is replaced by the actual name of your sample)  
+In the `data/raw/` subdirectory, place the fastq file(s) with your Nanopore reads for your BAC(s) sequencing experiment (format must be: `sampleName.fastq` where `sampleName` is replaced by the actual name(s) of your sample(s))  
 
 In the `myFirstBAC` directory, place the following files:  
 

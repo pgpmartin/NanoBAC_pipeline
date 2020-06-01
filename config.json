@@ -9,4 +9,5 @@
     "VDVreadsNumberOfRandomSets" : 11,
     "VDVreadsNumberOfSequencesPerRndSample": 11,
     "minVDreadLength" : 40000,
+    "minDNAlength_DVDreads" : 25000,
 }
