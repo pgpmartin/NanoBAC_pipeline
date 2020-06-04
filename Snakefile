@@ -8,10 +8,9 @@ localrules: all, Rename_Reads, RenamedReads_fq2fa, ReadLengthTable, AlignVector,
             RandomSampling_VDVreads, consensus_VDVrandomSets, consensus_fromVDVcons, Select_longVDreads, SelectSplit_DVDreads,
             merge_VD_DV_reads, Polishing_step01, Polishing_step02
 
-WORKDIR = config['workingDIR']
-LOGDIR = WORKDIR+"/log"
+LOGDIR = "log"
 SCRIPTDIR = config['scriptDIR']
-SAMPLENAME, = glob_wildcards(WORKDIR+"/data/raw/{id}.fastq")
+SAMPLENAME, = glob_wildcards("data/raw/{sample}.fastq")
 NUMRNDSET = config['VDVreadsNumberOfRandomSets']
 RNDSETS = list(range(1, int(NUMRNDSET)+1))
 #modules
@@ -744,7 +743,7 @@ rule Polishing_step01:
     shell: "mv {input} {output}"
 
 # Define polishing step 02
-# To stop the polishing loop, do not name the final assembly {sample}_{something}.fa 
+# To stop the polishing loop, do not name the final assembly {sample}_{something}.fa
 rule Polishing_step02:
     message: "moving polished consensus"
     input: "assembly/polishing/{sample}_Polished01_polished.fa"
