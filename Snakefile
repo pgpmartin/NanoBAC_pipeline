@@ -337,6 +337,8 @@ rule Annotate_Reads:
         "tables/ReadClass/{sample}_ReadClass.rds"
     log:
         "log/{sample}_AnnotateReads.log"
+    singularity:
+        "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
     shell:
         """
@@ -376,6 +378,8 @@ rule Select_VDVreads:
         outVDVnames = "SelectedReads/VDV/{sample}_Sel_VDV_ReadNames.tsv"
     log:
         "log/{sample}_Sel_VDV_Selection.log"
+    singularity:
+        "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
     shell:
         """
@@ -455,6 +459,8 @@ rule Prepare_VDV_reads:
         VDVjunctions = "SelectedReads/VDVprepared/{sample}_VDVreads_InsertVectorJunctions.rds"
     log:
         "log/{sample}_VDVreadPreparation.log"
+    singularity:
+        "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 4
     shell:
         """
@@ -544,6 +550,8 @@ rule consensus_VDVrandomSets:
         consName = "cons_{sample}_RS{NUM}"
     log:
         "log/{sample}_ConsensusVDVRndSet_RS{NUM}.log"
+    singularity:
+        "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
     shell:
         """
@@ -595,6 +603,8 @@ rule consensus_fromVDVcons:
         consName = "cons_{sample}"
     log:
         "log/{sample}_ConsensusFromVDVcons.log"
+    singularity:
+        "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
     shell:
         """
@@ -621,6 +631,8 @@ rule Select_longVDreads:
         outReadNames = "SelectedReads/longVD/{sample}_Sel_longVD_ReadNames.tsv"
     log:
         "log/{sample}_Sel_longVD_Selection.log"
+    singularity:
+        "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
     shell:
         """
@@ -653,6 +665,8 @@ rule SelectSplit_DVDreads:
         outFasta = "SelectedReads/DVD/{sample}_SelSplit_DVD.fa"
     log:
         "log/{sample}_DVD_SelectAndSplit.log"
+    singularity:
+        "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
     shell:
         """
