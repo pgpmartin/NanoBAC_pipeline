@@ -128,6 +128,7 @@ rule CreateBlastDatabase:
         "log/{sample}_makeblastdb.log"
     threads: 1
     conda: "envs/blast.yaml"
+    envmodules: "blast/2.9.0"
     shell:
         """
         outbase={output}
@@ -151,6 +152,7 @@ rule AlignVector:
     log:
         "log/{sample}_blastVector.log"
     conda: "envs/blast.yaml"
+    envmodules: "blast/2.9.0"
     threads: 1
     shell:
         """
@@ -177,6 +179,7 @@ rule AlignGeneA:
     log:
         "log/{sample}_blastGeneA.log"
     conda: "envs/blast.yaml"
+    envmodules: "blast/2.9.0"
     threads: 1
     shell:
         """
@@ -203,6 +206,7 @@ rule AlignGeneB:
     log:
         "log/{sample}_blastGeneB.log"
     conda: "envs/blast.yaml"
+    envmodules: "blast/2.9.0"
     threads: 1
     shell:
         """
@@ -229,6 +233,7 @@ rule Align2Host:
     log:
         "log/{sample}_hostalign.log"
     conda: "envs/minimap2.yaml"
+    envmodules: "minimap2/2.17"
     threads: 4
     shell:
         """
@@ -250,6 +255,7 @@ rule Hostsam2paf:
         "align/minimap2/host/{sample}.paf"
     threads: 1
     conda: "envs/minimap2.yaml"
+    envmodules: "minimap2/2.17"
     shell:
         """
         paftools.js sam2paf -p {input} > {output}
@@ -266,6 +272,7 @@ rule HostAlignStats:
         "align/minimap2/host/{sample}_alignment.stats"
     threads: 1
     conda: "envs/samtools.yaml"
+    envmodules: "samtools/1.9"
     shell:
         """
         TotalAlignments=$(samtools view -c {input})
@@ -301,6 +308,7 @@ rule Filter_HostAlignment_SAM2BAM:
         "align/minimap2/host/{sample}.bam"
     threads: 4
     conda: "envs/samtools.yaml"
+    envmodules: "samtools/1.9"
     shell:
         """
         if [ "{threads}" -ge 2 ];
@@ -337,6 +345,7 @@ rule Annotate_Reads:
         "tables/ReadClass/{sample}_ReadClass.rds"
     log:
         "log/{sample}_AnnotateReads.log"
+    envmodules: "r/3.6.0"
     singularity:
         "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
@@ -369,8 +378,8 @@ rule Select_VDVreads:
         MaxClusters = 10,
         plotVar = "InsertLength",
         plotRes = 150,
-        plotHeight = 4,
-        plotWidth = 4,
+        plotHeight = 6,
+        plotWidth = 6,
         plotFormat = "png"
     output:
         outPlot = "Plots/{sample}_VDVreadSelection.png",
@@ -378,6 +387,7 @@ rule Select_VDVreads:
         outVDVnames = "SelectedReads/VDV/{sample}_Sel_VDV_ReadNames.tsv"
     log:
         "log/{sample}_Sel_VDV_Selection.log"
+    envmodules: "r/3.6.0"
     singularity:
         "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
@@ -410,6 +420,7 @@ rule selRead_Get_fastq:
     output:
         "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}.fq"
     conda: "envs/seqtk.yaml"
+    envmodules: "seqtk/1.3"
     threads: 1
     shell:
         """
@@ -459,6 +470,7 @@ rule Prepare_VDV_reads:
         VDVjunctions = "SelectedReads/VDVprepared/{sample}_VDVreads_InsertVectorJunctions.rds"
     log:
         "log/{sample}_VDVreadPreparation.log"
+    envmodules: "r/3.6.0"
     singularity:
         "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 4
@@ -492,6 +504,7 @@ rule RandomSampling_VDVreads:
     log:
         "log/{sample}_VDVreadsRandomSampling.log"
     conda: "envs/seqtk.yaml"
+    envmodules: "seqtk/1.3"
     threads: 1
     shell:
         """
@@ -524,6 +537,7 @@ rule Kalign_RandomSetsOfVDVreads:
     log:
         "log/{sample}_kalign_RS{NUM}.log"
     conda: "envs/kalign2.yaml"
+    envmodules: "kalign/2.04"
     threads: 1
     shell:
         """
@@ -550,6 +564,7 @@ rule consensus_VDVrandomSets:
         consName = "cons_{sample}_RS{NUM}"
     log:
         "log/{sample}_ConsensusVDVRndSet_RS{NUM}.log"
+    envmodules: "r/3.6.0"
     singularity:
         "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
@@ -577,6 +592,7 @@ rule align_consensus_VDVrandomSets:
     log:
         "log/{sample}_consAlign.log"
     conda: "envs/kalign2.yaml"
+    envmodules: "kalign/2.04"
     threads: 1
     shell:
         """
@@ -603,6 +619,7 @@ rule consensus_fromVDVcons:
         consName = "cons_{sample}"
     log:
         "log/{sample}_ConsensusFromVDVcons.log"
+    envmodules: "r/3.6.0"
     singularity:
         "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
@@ -631,6 +648,7 @@ rule Select_longVDreads:
         outReadNames = "SelectedReads/longVD/{sample}_Sel_longVD_ReadNames.tsv"
     log:
         "log/{sample}_Sel_longVD_Selection.log"
+    envmodules: "r/3.6.0"
     singularity:
         "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
@@ -665,6 +683,7 @@ rule SelectSplit_DVDreads:
         outFasta = "SelectedReads/DVD/{sample}_SelSplit_DVD.fa"
     log:
         "log/{sample}_DVD_SelectAndSplit.log"
+    envmodules: "r/3.6.0"
     singularity:
         "shub://pgpmartin/SingIMG:r36_nanobac"
     threads: 1
@@ -717,6 +736,7 @@ rule align_VD_to_cons:
     log:
         "log/{sample}_polishing_{consensusType}.log"
     conda: "envs/minimap2.yaml"
+    envmodules: "minimap2/2.17"
     threads: 4
     shell:
         """
@@ -738,6 +758,7 @@ rule racon_Polish:
     output:
         "assembly/polishing/{sample}_{consensusType}_polished.fa"
     conda: "envs/racon.yaml"
+    envmodules: "racon/1.4"
     threads: 4
     shell:
         """
