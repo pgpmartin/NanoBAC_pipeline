@@ -33,10 +33,17 @@ The pipeline takes as inputs:
 
 The pipeline will do the following:
 
-  - rename the reads (to simplify their very long names) and save a table of the old names and new names
-  - obtain a table of the read length
-  - align the vector, GeneA and GeneB on the reads
-  - Based on this data, classify the reads in particular in terms of VDV, DVD
+  - Rename the reads (to simplify their very long names) and save a table of the old names and new names
+  - Obtain a table of the read length
+  - Align the vector, GeneA and GeneB on the reads using Blast
+  - Align the reads on the host genome using minimap2
+  - Based on all the above data, classify the reads in particular in terms of VDV, DVD, VD...
+  - Select VDV reads of the appropriate size and replace the vector sequence by the full true vector sequence at both ends
+  - Perform multiple alignment on several random samples of VDV reads, obtain the consensus sequence from each multiple alignment and perform a multiple alignment of these consensus to obtain the initial consensus sequence.
+  - Select DVD reads, split them at the vector sequence (to get DV or VD reads) and orient them in a consistent manner. Select long VD reads and combine them with split DVD reads.
+  - Use these VD/DV reads to polish twice the initial consensus sequence
+  
+This will give the final assembly which is found in `assembly/final_assembly_BACname.fa`
 
 ### Outputs:
 The pipeline creates the folders and files illustrated below. 
