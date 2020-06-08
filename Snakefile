@@ -71,7 +71,7 @@ rule Rename_Reads:
     params:
         sampleName = "{sample}"
     output:
-        "data/renamed/{sample}.fq"
+        temp("data/renamed/{sample}.fq")
     shell:
         """
         cat {input} | \
@@ -418,7 +418,7 @@ rule selRead_Get_fastq:
         rawfastq = "data/renamed/{sample}.fq",
         ReadSelection = "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}_ReadNames.tsv"
     output:
-        "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}.fq"
+        temp("SelectedReads/{readSelection}/{sample}_Sel_{readSelection}.fq")
     conda: "envs/seqtk.yaml"
     envmodules: "seqtk/1.3"
     threads: 1
