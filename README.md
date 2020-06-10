@@ -144,7 +144,7 @@ In addition, the [NanoBAC R package](https://github.com/pgpmartin/NanoBAC) and i
 ### Option 1: install everything yourself
 
 You can manually install all these tools and make sure they are accessible via your `$PATH`.  
-When using a cluster (using `snakemake --cluster` as explained below), many of these tools may already be accessible via [environment modules](http://modules.sourceforge.net/). However, you will probably need to modify the `SnakeFile` to adapt it to your own system/environment (see the lines starting by `envmodules:` and see the [documentation](https://snakemake.readthedocs.io/en/stable/snakefiles/deployment.html#using-environment-modules)).
+When using a cluster (using `snakemake --cluster` as explained below), many of these tools may already be accessible via [environment modules](http://modules.sourceforge.net/). In order to use them, you need to install snakemake version >5.9.0 and to modify the `SnakeFile` to adapt it to your own system/environment: see the commented lines starting by `envmodules:` and see the [documentation](https://snakemake.readthedocs.io/en/stable/snakefiles/deployment.html#using-environment-modules). The lines are commented in order for the pipeline to also work with earlier versions of snakemake.
 
 
 ### Option 2: install R/NanoBAC and let conda do the rest
