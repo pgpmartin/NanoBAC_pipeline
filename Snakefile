@@ -5,43 +5,66 @@ shell.executable("/bin/bash")
 
 localrules: all, Rename_Reads, RenamedReads_fq2fa, ReadLengthTable, AlignVector, AlignGeneA,
             AlignGeneB, Annotate_Reads, Select_VDVreads, selRead_Get_fastq, selRead_fastq2fasta, Prepare_VDV_reads,
-            RandomSampling_VDVreads, consensus_VDVrandomSets, consensus_fromVDVcons, Select_longVDreads, SelectSplit_DVDreads,
+            DefineRandomSampleParam, RandomSampling_VDVreads, consensus_VDVrandomSets, consensus_fromVDVcons, Select_longVDreads, SelectSplit_DVDreads,
             merge_VD_DV_reads, Polishing_step01, Polishing_step02
 
 LOGDIR = "log"
 SCRIPTDIR = config['scriptDIR']
 SAMPLENAME, = glob_wildcards("data/raw/{sample}.fastq")
-NUMRNDSET = config['VDVreadsNumberOfRandomSets']
-RNDSETS = list(range(1, int(NUMRNDSET)+1))
+#NUMRNDSET = config['VDVreadsNumberOfRandomSets']
+#RNDSETS = list(range(1, int(NUMRNDSET)+1))
+
 #modules
-#import os.path
+import os
+
+# function to count the prepared VDV reads from a fasta file and ouput 2 values:
+# 1st value is the number of random sets
+# 2nd value is the number of sequences per random sets
+def VDVcount(fafile):
+    nvdv = len([1 for line in open(fafile) if line.startswith(">")])
+#    print("Number of VDV reads: " + str(nvdv))
+    if nvdv <= 10:
+        print("There are " + nvdv + " VDV reads (<11 so stopping here)")
+        exit(1)
+    elif nvdv < 20:
+        res = (nvdv, 11, 6)
+    elif nvdv < 50:
+        res = (nvdv, 11, 11)
+    elif nvdv < 100:
+        res = (nvdv, 21, 11)
+    else:
+        res = (nvdv, 21, 21)
+
+    return(res)
+
+
 
 rule all:
     input:
         expand("tables/ReadNames/{sample}_ReadNameTable.tsv", sample=SAMPLENAME),
         expand("data/renamed/{sample}.fq.gz", sample=SAMPLENAME),
-        expand("data/renamed/{sample}.fa", sample=SAMPLENAME),
-        expand("tables/ReadLength/{sample}_ReadLength.tsv", sample=SAMPLENAME),
-        expand("tables/ReadClass/{sample}_ReadClass.rds", sample=SAMPLENAME),
-        expand("align/Blast/results/{sample}_vectorblast.res", sample=SAMPLENAME),
-        expand("align/Blast/results/{sample}_geneAblast.res", sample=SAMPLENAME),
-        expand("align/Blast/results/{sample}_geneBblast.res", sample=SAMPLENAME),
-        expand("align/minimap2/host/{sample}.paf", sample=SAMPLENAME),
+#        expand("data/renamed/{sample}.fa", sample=SAMPLENAME),
+#        expand("tables/ReadLength/{sample}_ReadLength.tsv", sample=SAMPLENAME),
+#        expand("tables/ReadClass/{sample}_ReadClass.rds", sample=SAMPLENAME),
+#        expand("align/Blast/results/{sample}_vectorblast.res", sample=SAMPLENAME),
+#        expand("align/Blast/results/{sample}_geneAblast.res", sample=SAMPLENAME),
+#        expand("align/Blast/results/{sample}_geneBblast.res", sample=SAMPLENAME),
+#        expand("align/minimap2/host/{sample}.paf", sample=SAMPLENAME),
         expand("align/minimap2/host/{sample}_alignment.stats", sample=SAMPLENAME),
-        expand("SelectedReads/VDV/{sample}_Sel_VDV.rds", sample=SAMPLENAME),
-        expand("SelectedReads/VDV/{sample}_Sel_VDV.fa", sample=SAMPLENAME),
+#        expand("SelectedReads/VDV/{sample}_Sel_VDV.rds", sample=SAMPLENAME),
+#        expand("SelectedReads/VDV/{sample}_Sel_VDV.fa", sample=SAMPLENAME),
         expand("SelectedReads/VDV/{sample}_Sel_VDV.fq.gz", sample=SAMPLENAME),
         expand("SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa", sample=SAMPLENAME),
-        expand("SelectedReads/VDVprepared/RandomSamples/{sample}_RS{NUM}.fa", sample=SAMPLENAME, NUM = RNDSETS),
-        expand("align/kalign/VDVrndSets/{sample}_RS{NUM}.msf", sample=SAMPLENAME, NUM=RNDSETS),
-        expand("align/kalign/VDVrndSets/{sample}_RS{NUM}_cons.fa", sample=SAMPLENAME, NUM=RNDSETS),
-        expand("align/kalign/ConsFromVDV/{sample}_consAlign.msf", sample=SAMPLENAME),
-        expand("assembly/{sample}_InitialConsensus.fa", sample=SAMPLENAME),
-        expand("SelectedReads/longVD/{sample}_Sel_longVD.rds", sample=SAMPLENAME),
-        expand("SelectedReads/longVD/{sample}_Sel_longVD.fa", sample=SAMPLENAME),
-        expand("SelectedReads/longVD/{sample}_Sel_longVD.fq.gz", sample=SAMPLENAME),
-        expand("SelectedReads/DVD/{sample}_SelSplit_DVD.fa", sample=SAMPLENAME),
-        expand("SelectedReads/{sample}_VDreadsForPolishing.fa", sample=SAMPLENAME),
+#        expand("SelectedReads/VDVprepared/RandomSamples/{sample}_RS{NUM}.fa", sample=SAMPLENAME, NUM = RNDSETS),
+#        expand("align/kalign/VDVrndSets/{sample}_RS{NUM}.msf", sample=SAMPLENAME, NUM=RNDSETS),
+#        expand("align/kalign/VDVrndSets/{sample}_RS{NUM}_cons.fa", sample=SAMPLENAME, NUM=RNDSETS),
+#        expand("align/kalign/ConsFromVDV/{sample}_consAlign.msf", sample=SAMPLENAME),
+#        expand("assembly/{sample}_InitialConsensus.fa", sample=SAMPLENAME),
+#        expand("SelectedReads/longVD/{sample}_Sel_longVD.rds", sample=SAMPLENAME),
+#        expand("SelectedReads/longVD/{sample}_Sel_longVD.fa", sample=SAMPLENAME),
+#        expand("SelectedReads/longVD/{sample}_Sel_longVD.fq.gz", sample=SAMPLENAME),
+#        expand("SelectedReads/DVD/{sample}_SelSplit_DVD.fa", sample=SAMPLENAME),
+#        expand("SelectedReads/{sample}_VDreadsForPolishing.fa", sample=SAMPLENAME),
         expand("assembly/final_assembly_{sample}.fa", sample=SAMPLENAME)
 
 
@@ -492,17 +515,37 @@ rule Prepare_VDV_reads:
         >> {log} 2>&1
         """
 
-# Obtain random samples of VDV reads
-rule RandomSampling_VDVreads:
-    message: "Obtaining random samples of prepared VDV reads"
+rule DefineRandomSampleParam:
+    message: "Define the parameters of VDV reads random sampling"
     input:
         "SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa"
-    params:
-        sampleName = "{sample}",
-        NumSeqPerSample = config['VDVreadsNumberOfSequencesPerRndSample'],
-        NumRndSample = NUMRNDSET
     output:
-        expand("SelectedReads/VDVprepared/RandomSamples/{{sample}}_RS{NUM}.fa", NUM = RNDSETS)
+        NumVDVreads = "params/VDVRndSets/{sample}_NumVDVreads.txt",
+        NumSeqPerSample = "params/VDVRndSets/{sample}_NumSeqPerSample.txt",
+        NumRndSample = "params/VDVRndSets/{sample}_NumRndSample.txt"
+    run:
+        RndSetParam = VDVcount(input[0])
+        with open(output.NumVDVreads, "w") as out:
+            out.write(str(RndSetParam[0]))
+        with open(output.NumRndSample, "w") as out:
+            out.write(str(RndSetParam[1]))
+        with open(output.NumSeqPerSample, "w") as out:
+            out.write(str(RndSetParam[2]))
+
+
+# Obtain random samples of VDV reads
+checkpoint RandomSampling_VDVreads:
+    message: "Obtaining random samples of prepared VDV reads"
+    input:
+        VDVreads = "SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa",
+        NumVDVreads = "params/VDVRndSets/{sample}_NumVDVreads.txt",
+        NumSeqPerSample = "params/VDVRndSets/{sample}_NumSeqPerSample.txt",
+        NumRndSample = "params/VDVRndSets/{sample}_NumRndSample.txt"
+    params:
+        sampleName = "{sample}"
+    output:
+        directory("SelectedReads/VDVprepared/RandomSamples/{sample}")
+#        expand("SelectedReads/VDVprepared/RandomSamples/{{sample}}_RS{NUM}.fa", NUM = list(range(1, int({params.NumRndSample})+1)))
     log:
         "log/{sample}_VDVreadsRandomSampling.log"
     conda: "envs/seqtk.yaml"
@@ -510,11 +553,19 @@ rule RandomSampling_VDVreads:
     threads: 1
     shell:
         """
-        fastafile={input} \
+        NUMVDV=$(cat {input.NumVDVreads})
+        NUMSET=$(cat {input.NumRndSample})
+        NUMSEQ=$(cat {input.NumSeqPerSample})
+
+        printf "%s\n" "Number of prepared VDV reads: ${{NUMVDV}}" >> {log}
+        printf "%s\n" "Number of random sets of VDV reads: ${{NUMSET}}" >> {log}
+        printf "%s\n" "Number of VDV reads per random set: ${{NUMSEQ}}" >> {log}
+
+        fastafile={input.VDVreads} \
         sampleName={params.sampleName} \
-        outDIR=$(dirname {output[0]}) \
-        NumRndSample={params.NumRndSample} \
-        NumSeqPerSample={params.NumSeqPerSample} \
+        outDIR={output} \
+        NumRndSample=${{NUMSET}} \
+        NumSeqPerSample=${{NUMSEQ}} \
         {SCRIPTDIR}/MakeRandomSamplesFromFasta.sh \
         >> {log} 2>&1
         """
@@ -528,7 +579,7 @@ rule RandomSampling_VDVreads:
 rule Kalign_RandomSetsOfVDVreads:
     message: "Aligning random samples of VDV reads"
     input:
-        "SelectedReads/VDVprepared/RandomSamples/{sample}_RS{NUM}.fa"
+        "SelectedReads/VDVprepared/RandomSamples/{sample}/{sample}_RS{NUM}.fa"
     params:
         gapopen = 55,
         gapextension = 8.5,
@@ -579,11 +630,19 @@ rule consensus_VDVrandomSets:
         >> {log} 2>&1
         """
 
+# See https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#data-dependent-conditional-execution
+def ConsensusFromRndSets(wildcards):
+    checkpoint_output = checkpoints.RandomSampling_VDVreads.get(**wildcards).output[0]
+    return expand("align/kalign/VDVrndSets/{sample}_RS{NUM}_cons.fa",
+            sample=wildcards.sample,
+            NUM=glob_wildcards(os.path.join(checkpoint_output, "{sample}_RS{NUM}.fa")).NUM)
+
 # Align consensus obtained from random sets of VDV reads
 rule align_consensus_VDVrandomSets:
     message: "Align consensus from multiple alignment of random sets of VDV reads"
     input:
-        expand("align/kalign/VDVrndSets/{{sample}}_RS{NUM}_cons.fa", NUM=RNDSETS)
+        ConsensusFromRndSets
+#        expand("align/kalign/VDVrndSets/{{sample}}_RS{NUM}_cons.fa", NUM=list(range(1, int(VDVcount({input})[0])+1)))
     params:
         gapopen = 55,
         gapextension = 8.5,

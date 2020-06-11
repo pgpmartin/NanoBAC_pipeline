@@ -36,11 +36,11 @@
       exit 1
     fi
 
-  ## Require at least 20 VDV reads to get a reliable BAC sequence
+  ## Require at least 11 VDV reads to get a reliable BAC sequence
     ### Get the number of total sequences:
     TotNumSeq=$(grep "^>" ${fastafile} | wc -l)
     
-    if (( TotNumSeq <= 20 ))
+    if (( TotNumSeq < 11 ))
     then
       printf "%s\n" "${sampleName} has only ${TotNumSeq} VDV sequences" >&2
       exit 1

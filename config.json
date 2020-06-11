@@ -5,8 +5,6 @@
     "GeneAFasta": "/N/project/NOR/Bank/18S_rDNA_Col-0_consensus.fa",
     "GeneBFasta": "/N/project/NOR/Bank/25S_rDNA_Col-0_consensus.fa",
     "RestrictionSite": "G^AATTC",
-    "VDVreadsNumberOfRandomSets" : 11,
-    "VDVreadsNumberOfSequencesPerRndSample": 11,
     "minVDreadLength" : 40000,
     "minDNAlength_DVDreads" : 25000,
 }
