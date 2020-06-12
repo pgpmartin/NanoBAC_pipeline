@@ -26,7 +26,7 @@ def VDVcount(fafile):
         print("There are " + nvdv + " VDV reads (<11 so stopping here)")
         exit(1)
     elif nvdv < 20:
-        res = (nvdv, 11, 6)
+        res = (nvdv, 7, 6)
     elif nvdv < 50:
         res = (nvdv, 11, 11)
     elif nvdv < 100:
