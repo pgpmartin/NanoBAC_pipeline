@@ -772,6 +772,8 @@ rule merge_VD_DV_reads:
         NumReads=$(grep "^>" {output} | wc -l)
         if (( NumReads == 0 )); then
             printf "%s\\n" "Zero reads for polishing step" > {log}
+            echo "Zero reads for polishing step. Stopping Here!"
+            exit 1
         else
             printf "%s\\n" "Number of reads for polishing step: ${{NumReads}}" > {log}
         fi
