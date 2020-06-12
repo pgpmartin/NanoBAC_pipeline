@@ -72,7 +72,8 @@ selLongVD <- NanoBAC::FilterBACreads(
 
 # Throw an error if 0 reads are selected
 if (is.null(selLongVD)) {
-    stop("Zero long VD reads selected")
+    warning("Zero long VD reads selected")
+    system(paste("touch", outRDS, outReadNames, sep = " "))
 } else {
     
     # save RDS file
