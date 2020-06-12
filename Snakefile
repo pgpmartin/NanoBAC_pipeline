@@ -11,15 +11,14 @@ localrules: all, Rename_Reads, RenamedReads_fq2fa, ReadLengthTable, AlignVector,
 LOGDIR = "log"
 SCRIPTDIR = config['scriptDIR']
 SAMPLENAME, = glob_wildcards("data/raw/{sample}.fastq")
-#NUMRNDSET = config['VDVreadsNumberOfRandomSets']
-#RNDSETS = list(range(1, int(NUMRNDSET)+1))
 
 #modules
 import os
 
-# function to count the prepared VDV reads from a fasta file and ouput 2 values:
-# 1st value is the number of random sets
-# 2nd value is the number of sequences per random sets
+# function to count the prepared VDV reads from a fasta file and ouput 3 values:
+# 1st value is th enumber of VDV reads selected
+# 2nd value is the number of random sets
+# 3rd value is the number of sequences per random sets
 def VDVcount(fafile):
     nvdv = len([1 for line in open(fafile) if line.startswith(">")])
 #    print("Number of VDV reads: " + str(nvdv))
@@ -569,11 +568,6 @@ checkpoint RandomSampling_VDVreads:
         {SCRIPTDIR}/MakeRandomSamplesFromFasta.sh \
         >> {log} 2>&1
         """
-## Another option for this rule is to use dynamic files. See https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html
-## it would allow to not throw an error at less than 20 VDV reads (not sure it's a good thing though??)
-## However that may make downstream rules more complicated (not knowing the number of input files)
-## dynamic-flag will be deprecated in Snakemake 6.0
-## It is thus recommended to use checkpoints instead: https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#data-dependent-conditional-execution
 
 # Align VDV random samples
 rule Kalign_RandomSetsOfVDVreads:
@@ -642,7 +636,6 @@ rule align_consensus_VDVrandomSets:
     message: "Align consensus from multiple alignment of random sets of VDV reads"
     input:
         ConsensusFromRndSets
-#        expand("align/kalign/VDVrndSets/{{sample}}_RS{NUM}_cons.fa", NUM=list(range(1, int(VDVcount({input})[0])+1)))
     params:
         gapopen = 55,
         gapextension = 8.5,

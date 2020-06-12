@@ -128,7 +128,7 @@ BACproject
 
 Running the NanoBAC pipeline requires the following softwares (tested with the version indicated):  
 
-  - [snakemake](https://snakemake.readthedocs.io/en/stable/) (5.3)
+  - [snakemake](https://snakemake.readthedocs.io/en/stable/) (5.4)
   - [blast](https://www.ncbi.nlm.nih.gov/books/NBK279690/) (2.9.0)
   - [kalign2](https://msa.sbc.su.se/cgi-bin/msa.cgi) (2.04)
   - [minimap2](https://github.com/lh3/minimap2) (2.17)
@@ -138,7 +138,9 @@ Running the NanoBAC pipeline requires the following softwares (tested with the v
   - [racon](https://github.com/isovic/racon) (1.4.13)
   - [R](https://www.r-project.org/) (3.6)
 
-In addition, the [NanoBAC R package](https://github.com/pgpmartin/NanoBAC) and its dependencies should be installed, as well as the [R.utils](https://cran.r-project.org/web/packages/R.utils) package
+In addition, the [NanoBAC R package](https://github.com/pgpmartin/NanoBAC) and its dependencies should be installed, as well as the [R.utils](https://cran.r-project.org/web/packages/R.utils) package. However, this install is optional if you use [Singularity](https://sylabs.io/docs/), as explained below. In this latter case, you also need:
+
+  - [Singularity](https://sylabs.io/docs/) (3.5.2)
 
 
 ### Option 1: install everything yourself
