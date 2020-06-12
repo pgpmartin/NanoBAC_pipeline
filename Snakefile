@@ -8,12 +8,19 @@ localrules: all, Rename_Reads, RenamedReads_fq2fa, ReadLengthTable, AlignVector,
             DefineRandomSampleParam, RandomSampling_VDVreads, consensus_VDVrandomSets, consensus_fromVDVcons, Select_longVDreads, SelectSplit_DVDreads,
             merge_VD_DV_reads, Polishing_step01, Polishing_step02
 
-LOGDIR = "log"
-SCRIPTDIR = config['scriptDIR']
+# Get sample names
 SAMPLENAME, = glob_wildcards("data/raw/{sample}.fastq")
 
 #modules
 import os
+
+# create log directory if it does not exist
+LOGDIR = "log"
+if not(os.path.exists(LOGDIR)):
+    os.mkdir(LOGDIR)
+
+# get the full path of the script directory
+SCRIPTDIR = os.path.abspath(config['scriptDIR'])
 
 # function to count the prepared VDV reads from a fasta file and ouput 3 values:
 # 1st value is the number of VDV reads selected
