@@ -95,7 +95,7 @@ selvdv <- NanoBAC::selectVDVreads(ReadClass = args$ReadClass,
                          SizeTolerance = args$SizeTolerance,
                          WithGeneA = args$WithGeneA,
                          WithGeneB = args$WithGeneB,
-                         MaxClusters = 10L,
+                         MaxClusters = args$MaxClusters,
                          makePlot = args$makePlot,
                          plotVar = args$plotVar)
 
@@ -127,7 +127,7 @@ if (args$makePlot) {
 saveRDS(selvdv, outRDS)
 
 # Save the list of VDV reads
-write.table(as.character(selvdv$VDVreads$ReadName),
+write.table(as.character(selvdv$VDVreads$ReadName[selvdv$VDVreads$Selected]),
             outVDVnames,
             sep = "\t",
             row.names = FALSE,

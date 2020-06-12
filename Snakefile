@@ -16,7 +16,7 @@ SAMPLENAME, = glob_wildcards("data/raw/{sample}.fastq")
 import os
 
 # function to count the prepared VDV reads from a fasta file and ouput 3 values:
-# 1st value is th enumber of VDV reads selected
+# 1st value is the number of VDV reads selected
 # 2nd value is the number of random sets
 # 3rd value is the number of sequences per random sets
 def VDVcount(fafile):
@@ -407,7 +407,7 @@ rule Select_VDVreads:
         plotFormat = "png"
     output:
         outPlot = "Plots/{sample}_VDVreadSelection.png",
-        outRDS = "SelectedReads/VDV/{sample}_Sel_VDV.rds",
+        outRDS = "SelectedReads/VDV/{sample}_ALL_VDV.rds",
         outVDVnames = "SelectedReads/VDV/{sample}_Sel_VDV_ReadNames.tsv"
     log:
         "log/{sample}_Sel_VDV_Selection.log"
