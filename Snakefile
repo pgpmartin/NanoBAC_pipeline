@@ -147,12 +147,14 @@ rule ReadLengthTable:
 
 
 # Create Read database for Blast
+#makeblastdb creates variable file names depending on the size of the database
+#Using the solution found here: https://stackoverflow.com/questions/59288002/missingoutputexception-and-latency-wait-error-with-snakemake
 rule CreateBlastDatabase:
     message: "Creating BLAST database for {input}"
     input:
         "data/renamed/{sample}.fa"
     output:
-        "align/Blast/db/{sample}_blastdb.nhr"
+        done = touch("align/Blast/db/{sample}.makeblastdb.done")
     log:
         "log/{sample}_makeblastdb.log"
     threads: 1
@@ -162,11 +164,9 @@ rule CreateBlastDatabase:
 #        "blast/2.9.0"
     shell:
         """
-        outbase={output}
-        outbase=${{outbase%%.nhr}}
         makeblastdb \
           -in {input} \
-          -out ${{outbase}} \
+          -out align/Blast/db/{wildcards.sample}_blastdb \
           -parse_seqids \
           -dbtype nucl \
           -logfile {log}
@@ -177,7 +177,7 @@ rule AlignVector:
     message: "Aligning vector sequence on the reads {input}"
     input:
         query = config['VectorFasta'],
-        db = "align/Blast/db/{sample}_blastdb.nhr"
+        db_done = "align/Blast/db/{sample}.makeblastdb.done"
     output:
         "align/Blast/results/{sample}_vectorblast.res"
     log:
@@ -187,12 +187,10 @@ rule AlignVector:
     threads: 1
     shell:
         """
-        dbbase={input.db}
-        dbbase=${{dbbase%%.nhr}}
         blastn \
           -task megablast \
           -query {input.query} \
-          -db ${{dbbase}} \
+          -db align/Blast/db/{wildcards.sample}_blastdb \
           -out {output} \
           -outfmt 6 \
           -num_alignments 100000000 \
@@ -204,7 +202,7 @@ rule AlignGeneA:
     message: "Aligning GeneA on the reads {input}"
     input:
         query = config['GeneAFasta'],
-        db = "align/Blast/db/{sample}_blastdb.nhr"
+        db_done = "align/Blast/db/{sample}.makeblastdb.done"
     output:
         "align/Blast/results/{sample}_geneAblast.res"
     log:
@@ -214,12 +212,10 @@ rule AlignGeneA:
     threads: 1
     shell:
         """
-        dbbase={input.db}
-        dbbase=${{dbbase%%.nhr}}
         blastn \
           -task megablast \
           -query {input.query} \
-          -db ${{dbbase}} \
+          -db align/Blast/db/{wildcards.sample}_blastdb \
           -out {output} \
           -outfmt 6 \
           -num_alignments 100000000 \
@@ -231,7 +227,7 @@ rule AlignGeneB:
     message: "Aligning GeneB on the reads {input}"
     input:
         query = config['GeneBFasta'],
-        db = "align/Blast/db/{sample}_blastdb.nhr"
+        db_done = "align/Blast/db/{sample}.makeblastdb.done"
     output:
         "align/Blast/results/{sample}_geneBblast.res"
     log:
@@ -241,12 +237,10 @@ rule AlignGeneB:
     threads: 1
     shell:
         """
-        dbbase={input.db}
-        dbbase=${{dbbase%%.nhr}}
         blastn \
           -task megablast \
           -query {input.query} \
-          -db ${{dbbase}} \
+          -db align/Blast/db/{wildcards.sample}_blastdb \
           -out {output} \
           -outfmt 6 \
           -num_alignments 100000000 \
