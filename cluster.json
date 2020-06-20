@@ -2,7 +2,7 @@
     "__default__":
     {
         "mem": "1G",
-        "time": "00:20:00",
+        "time": "00:25:00",
         "logfolder": "log",
     },
     "CreateBlastDatabase":
