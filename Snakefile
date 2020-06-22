@@ -400,6 +400,7 @@ rule Select_VDVreads:
         SizeTolerance = 0.05,
         WithGeneA = True,
         WithGeneB = True,
+        ignoredReads = "NULL",
         MaxClusters = 10,
         plotVar = "InsertLength",
         plotRes = 150,
@@ -423,6 +424,7 @@ rule Select_VDVreads:
           -SizeTolerance={params.SizeTolerance} \
           -WithGeneA={params.WithGeneA} \
           -WithGeneB={params.WithGeneB} \
+          -ignoredReads={params.ignoredReads} \
           -MaxClusters={params.MaxClusters} \
           -plotVar={params.plotVar} \
           -plotRes={params.plotRes} \

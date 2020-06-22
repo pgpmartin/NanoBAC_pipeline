@@ -14,6 +14,7 @@ args <- R.utils::commandArgs(trailingOnly = TRUE, asValues = TRUE,
                                         SizeTolerance = 0.05,
                                         WithGeneA = NULL,
                                         WithGeneB = NULL,
+                                        ignoredReads = NULL,
                                         MaxClusters = 10L,
                                         makePlot = TRUE,
                                         plotVar = "InsertLength",
@@ -24,6 +25,18 @@ args <- R.utils::commandArgs(trailingOnly = TRUE, asValues = TRUE,
                                         outPlot = NULL,
                                         outRDS = NULL,
                                         outVDVnames = NULL))
+
+# parse the ignreReads argument if not null
+if (toupper(args$ignoredReads) == "NULL") {
+    args$ignoredReads = NULL
+}
+if (!is.null(args$ignoredReads) && toupper(args$ignoredReads) == "NA") {
+    args$ignoredReads = NULL
+}
+if (!is.null(args$ignoredReads)) {
+    args$ignoredReads <- gsub(" ", "", strsplit(args$ignoredReads, ",")[[1]])
+    message("Number of ignored reads: ", length(args$ignoredReads))
+}
 
 # Verbose:
 message("Running selectVDVreads with the following arguments:\n")
@@ -91,13 +104,18 @@ if (file.exists(args$outVDVnames)) {
 ###-----------------
 # Run selectVDVreads
 
-selvdv <- NanoBAC::selectVDVreads(ReadClass = args$ReadClass,
+pdf(NULL)
+selvdv <- NanoBAC::selectVDVreads(
+                         ReadClass = args$ReadClass,
                          SizeTolerance = args$SizeTolerance,
                          WithGeneA = args$WithGeneA,
                          WithGeneB = args$WithGeneB,
+                         ignoredReads = args$ignoredReads,
                          MaxClusters = args$MaxClusters,
                          makePlot = args$makePlot,
-                         plotVar = args$plotVar)
+                         plotVar = args$plotVar
+                         )
+dev.off()
 
 # save plot
 if (args$makePlot) {
