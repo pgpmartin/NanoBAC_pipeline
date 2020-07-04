@@ -26,7 +26,7 @@ fi
 ##----------------
 #modules / softwares
 ##----------------
-singversion=$(singularity --version)
+singversion=$(singularity --version 2>/dev/null)
 errcode=$?
 
 if [ "$errcode" -ne 0 ]; then
@@ -80,7 +80,7 @@ fi
 
 # Check if outpath exists.  If it exists check that it is empty. If it doesn't exist, create it.
 if [ -d "$outpath" ]; then
-    if (ls -1qA "$outpath" | grep -q .); then
+    if (ls -1qA "$outpath" 2>/dev/null | grep -q .); then
         printf "%s\n" "$outpath directory is not empty!" >&2
         exit 1
     fi
