@@ -94,7 +94,7 @@ rule Read_NameMapping:
 
 # Create a fastq file with the new (simple) names
 rule Rename_Reads:
-    message: "Renaming reads for {input}"
+    message: "Renaming reads for {wildcards.sample}"
     input:
         "data/raw/{sample}.fastq"
     params:
@@ -133,7 +133,7 @@ rule Compress_Renamed_FastQ:
 
 # Get a table with read lengths
 rule ReadLengthTable:
-    message: "Extracting Read Length"
+    message: "Extracting Read Length for {input}"
     input:
         "data/renamed/{sample}.fa"
     output:
@@ -174,7 +174,7 @@ rule CreateBlastDatabase:
 
 # Align the vector
 rule AlignVector:
-    message: "Aligning vector sequence on the reads {input}"
+    message: "Aligning vector sequence on the reads from {wildcards.sample}"
     input:
         query = config['VectorFasta'],
         db_done = "align/Blast/db/{sample}.makeblastdb.done"
@@ -199,7 +199,7 @@ rule AlignVector:
 
 # Align to gene A
 rule AlignGeneA:
-    message: "Aligning GeneA on the reads {input}"
+    message: "Aligning GeneA on the reads from {wildcards.sample}"
     input:
         query = config['GeneAFasta'],
         db_done = "align/Blast/db/{sample}.makeblastdb.done"
@@ -224,7 +224,7 @@ rule AlignGeneA:
 
 # Align to gene B
 rule AlignGeneB:
-    message: "Aligning GeneB on the reads {input}"
+    message: "Aligning GeneB on the reads from {wildcards.sample}"
     input:
         query = config['GeneBFasta'],
         db_done = "align/Blast/db/{sample}.makeblastdb.done"
@@ -249,7 +249,7 @@ rule AlignGeneB:
 
 # Align to host genome
 rule Align2Host:
-    message: "Aligning reads to host genome ({input})"
+    message: "Aligning reads from {wildcards.sample} to host genome"
     input:
         reads = "data/renamed/{sample}.fq",
         hostGenome = config['hostGenomeFasta']
@@ -273,7 +273,7 @@ rule Align2Host:
 
 # Convert to paf (only convert the primary and supplementary alignments with the -p argument )
 rule Hostsam2paf:
-    message: "Convert SAM to PAF ({input})"
+    message: "Convert {input} to PAF"
     input:
         "align/minimap2/host/{sample}.sam"
     output:
@@ -288,7 +288,7 @@ rule Hostsam2paf:
 
 # Gather some stats
 rule HostAlignStats:
-    message: "Host alignment stats"
+    message: "Host alignment stats for {input}"
     input:
         "align/minimap2/host/{sample}.sam"
     params:
@@ -354,7 +354,7 @@ rule Filter_HostAlignment_SAM2BAM:
 
 # Annotate the reads
 rule Annotate_Reads:
-    message: "Annotating reads"
+    message: "Annotating reads for {wildcards.sample}"
     input:
         blastvec = "align/Blast/results/{sample}_vectorblast.res",
         blastGeneA = "align/Blast/results/{sample}_geneAblast.res",
@@ -393,7 +393,7 @@ rule Annotate_Reads:
 
 # Select VDV Reads
 rule Select_VDVreads:
-    message: "Selecting VDV reads"
+    message: "Selecting VDV reads for {wildcards.sample}"
     input:
         "tables/ReadClass/{sample}_ReadClass.rds"
     params:
@@ -440,7 +440,7 @@ rule Select_VDVreads:
 
 # Obtain fastq of selected reads
 rule selRead_Get_fastq:
-    message: "Obtain fastq file of selected reads"
+    message: "Obtain fastq file of selected reads for {wildcards.readSelection}/{wildcards.sample}"
     input:
         rawfastq = "data/renamed/{sample}.fq",
         ReadSelection = "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}_ReadNames.tsv"
@@ -460,7 +460,7 @@ rule selRead_Get_fastq:
 
 # Convert fastq to fasta
 rule selRead_fastq2fasta:
-    message: "Convert fastq to fasta for selected reads"
+    message: "Convert {input} to fasta"
     input:
         "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}.fq"
     output:
@@ -473,7 +473,7 @@ rule selRead_fastq2fasta:
 
 # gzip fastq for selected reads
 rule selRead_gzip_fastq:
-    message: "Compress fastq for selected reads"
+    message: "Compress {input}"
     input: "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}.fq"
     output: "SelectedReads/{readSelection}/{sample}_Sel_{readSelection}.fq.gz"
     threads: 1
@@ -482,7 +482,7 @@ rule selRead_gzip_fastq:
 
 # Prepare VDV reads for multiple sequence alignments (by replacing the vector sequence)
 rule Prepare_VDV_reads:
-    message: "Preparing VDV reads for alignment"
+    message: "Preparing {wildcards.sample} VDV reads for alignment"
     input:
         VDVfasta = "SelectedReads/VDV/{sample}_Sel_VDV.fa",
         blastvec = "align/Blast/results/{sample}_vectorblast.res"
@@ -518,7 +518,7 @@ rule Prepare_VDV_reads:
         """
 
 rule DefineRandomSampleParam:
-    message: "Define the parameters of VDV reads random sampling"
+    message: "Define the parameters of VDV reads random sampling for {wildcards.sample}"
     input:
         "SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa"
     output:
@@ -537,7 +537,7 @@ rule DefineRandomSampleParam:
 
 # Obtain random samples of VDV reads
 checkpoint RandomSampling_VDVreads:
-    message: "Obtaining random samples of prepared VDV reads"
+    message: "Obtaining random samples of prepared VDV reads for {wildcards.sample}"
     input:
         VDVreads = "SelectedReads/VDVprepared/{sample}_SelectedPreparedVDVreads.fa",
         NumVDVreads = "params/VDVRndSets/{sample}_NumVDVreads.txt",
@@ -547,7 +547,6 @@ checkpoint RandomSampling_VDVreads:
         sampleName = "{sample}"
     output:
         directory("SelectedReads/VDVprepared/RandomSamples/{sample}")
-#        expand("SelectedReads/VDVprepared/RandomSamples/{{sample}}_RS{NUM}.fa", NUM = list(range(1, int({params.NumRndSample})+1)))
     log:
         "log/{sample}_VDVreadsRandomSampling.log"
     conda: "envs/seqtk.yaml"
@@ -574,7 +573,7 @@ checkpoint RandomSampling_VDVreads:
 
 # Align VDV random samples
 rule Kalign_RandomSetsOfVDVreads:
-    message: "Aligning random samples of VDV reads"
+    message: "Aligning random samples RS{wildcards.NUM} of VDV reads for {wildcards.sample}"
     input:
         "SelectedReads/VDVprepared/RandomSamples/{sample}/{sample}_RS{NUM}.fa"
     params:
@@ -603,9 +602,9 @@ rule Kalign_RandomSetsOfVDVreads:
         >> {log} 2>&1
         """
 
-# Obtain consensus from alignment of VDV reads random samples
+# Obtain consensus from multiple alignment of VDV reads random samples
 rule consensus_VDVrandomSets:
-    message: "Obtaining consensus sequence from multiple alignment of random sets of VDV reads"
+    message: "Consensus sequence from RS{wildcards.NUM} of VDV reads for {wildcards.sample}"
     input:
         "align/kalign/VDVrndSets/{sample}_RS{NUM}.msf"
     output:
@@ -636,7 +635,7 @@ def ConsensusFromRndSets(wildcards):
 
 # Align consensus obtained from random sets of VDV reads
 rule align_consensus_VDVrandomSets:
-    message: "Align consensus from multiple alignment of random sets of VDV reads"
+    message: "Align consensus from random sets of VDV reads for {wildcards.sample}"
     input:
         ConsensusFromRndSets
     params:
@@ -668,6 +667,7 @@ rule align_consensus_VDVrandomSets:
 
 # Obtain final consensus from multiple alignment
 rule consensus_fromVDVcons:
+    message: "Consensus from MSA of random sets of VDV reads for {wildcards.sample}"
     input:
         "align/kalign/ConsFromVDV/{sample}_consAlign.msf"
     output:
@@ -692,7 +692,7 @@ rule consensus_fromVDVcons:
 
 # Select long VD reads for polishing
 rule Select_longVDreads:
-    message: "Selecting long VD reads"
+    message: "Selecting long VD reads for {wildcards.sample}"
     input:
         "tables/ReadClass/{sample}_ReadClass.rds"
     params:
@@ -725,7 +725,7 @@ rule Select_longVDreads:
 
 # Select DVD reads (if any)
 rule SelectSplit_DVDreads:
-    message: "Selecting and splitting DVD reads"
+    message: "Selecting and splitting DVD reads for {wildcards.sample}"
     input:
         ReadClass = "tables/ReadClass/{sample}_ReadClass.rds",
         blastvec = "align/Blast/results/{sample}_vectorblast.res",
@@ -761,7 +761,7 @@ rule SelectSplit_DVDreads:
 
 # Merge DV/VD reads (from DVD reads) with long VD reads to use for polishing step
 rule merge_VD_DV_reads:
-    message: "Merging fasta files for VD/DV reads (used for polishing)"
+    message: "Merging fasta files for VD/DV reads (used for polishing) for {wildcards.sample}"
     input:
         DVD = "SelectedReads/DVD/{sample}_SelSplit_DVD.fa",
         VD = "SelectedReads/longVD/{sample}_Sel_longVD.fa"
@@ -786,7 +786,7 @@ rule merge_VD_DV_reads:
 ## TODO: evaluate if winnowmap (https://www.biorxiv.org/content/10.1101/2020.02.11.943241v1) instead of minimap2 gives better results at this step
 ## TODO: check if/how minimap2 uses the base-level quality scores. If it makes a difference, input fastq instead of fasta
 rule align_VD_to_cons:
-    message: "Aligning VD reads to consensus"
+    message: "Aligning VD reads to consensus for {wildcards.sample}"
     input:
         VDreads = "SelectedReads/{sample}_VDreadsForPolishing.fa",
         consensus = "assembly/{sample}_{consensusType}.fa"
@@ -809,7 +809,7 @@ rule align_VD_to_cons:
 
 # Polish using racon
 rule racon_Polish:
-    message: "Polishing consensus using racon"
+    message: "Polishing consensus for {wildcards.sample}_{wildcards.consensusType}"
     input:
         VDreads = "SelectedReads/{sample}_VDreadsForPolishing.fa",
         consensus = "assembly/{sample}_{consensusType}.fa",
@@ -831,7 +831,7 @@ rule racon_Polish:
 
 # Define polishing step 01
 rule Polishing_step01:
-    message: "moving polished consensus"
+    message: "moving {input}"
     input: "assembly/polishing/{sample}_InitialConsensus_polished.fa"
     output: "assembly/{sample}_Polished01.fa"
     shell: "mv {input} {output}"
@@ -839,7 +839,7 @@ rule Polishing_step01:
 # Define polishing step 02
 # To stop the polishing loop, do not name the final assembly {sample}_{something}.fa
 rule Polishing_step02:
-    message: "moving polished consensus"
+    message: "moving {input}"
     input: "assembly/polishing/{sample}_Polished01_polished.fa"
     output: "assembly/final_assembly_{sample}.fa"
     shell:
@@ -852,3 +852,4 @@ rule Polishing_step02:
           rmdir assembly/polishing
         fi
         """
+#Done
