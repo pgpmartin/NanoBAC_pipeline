@@ -30,7 +30,7 @@ def VDVcount(fafile):
     nvdv = len([1 for line in open(fafile) if line.startswith(">")])
 #    print("Number of VDV reads: " + str(nvdv))
     if nvdv <= 10:
-        print("There are " + nvdv + " VDV reads (<11 so stopping here)")
+        print("There are " + str(nvdv) + " VDV reads (<11 so stopping here)")
         exit(1)
     elif nvdv < 20:
         res = (nvdv, 7, 6)
