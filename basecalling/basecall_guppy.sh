@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 ##----------------
 ## Timing
 ##----------------
@@ -11,8 +13,9 @@ start=`date +%s`
 
 guppyContainer=${guppyContainer:-/N/project/NOR/SingIMG/guppy.sif}
 #Container can be built with:
+#  module load singularity/2.6.1
 #  singularity build guppy.sif shub://pgpmartin/SingIMG:guppy_4.0.1
-inpath=${inpath}
+#inpath=${inpath}
 outpath=${outpath:-"$inpath/guppy_basecalls"}
 ## if a folder $inpath/fast5s exist, guppy will do the basecalling in the fast5 files/folders that it contains
 ## otherwise guppy will do the basecalling on all the fast5 files located in $inpath/fast5_* folders

@@ -16,6 +16,7 @@ These 2 approaches can generate different types of reads characterized by the re
 The NanoBAC pipeline uses *multiple alignment of VDV reads* to generate a first consensus sequence and then uses DVD reads (after splitting at the vector) and long VD reads to polish the consensus sequence.
 
 Sequencing such large plasmids with long read technology is generally used to assemble highly repetitive regions of the genome. Thus, there are often know sequences (named "GeneA" and "GeneB" in the pipeline) that are expected in such sequences. The pipeline takes advantage of such sequences to filter the reads.  
+A separate pipeline: [NanoBAC_pipeline_NRD]() where NRD stands for "Non Repetitive DNA" ca be used in a similar way as this one but without using "GeneA" and "GeneB".
 Nanopore reads from plasmid sequencing are often contaminated with fragments of the host (e.g. E. Coli) genome, especially when using a *ligation proocol* where the fragment ends of the fragmentated host genome compete for adapter ligation. Such reads are also identified and filtered by the pipeline.  
 
 
@@ -371,3 +372,37 @@ snakemake \
 ```
 
 If running Snakemake in an interactive session and submitting batch jobs, it may be necessary to add the option `--latency-wait 120 all` as explained [here](https://hpc.nih.gov/apps/snakemake.html).
+
+
+## Troubleshooting
+
+### No VDV reads selected  
+**Too few VDV reads**: The pipeline will stop if there are only 10 VDV reads or less. With such a low number of VDV reads, a multiple alignment of all VDV reads is probably the most sensible approach.  
+If you want a more reliable assembly, you need to generate more data. The available VDV reads, if any, may allow you to choose a restriction enzyme that will only cut the vector and not the insert sequence. Using the ligation protocol instead of the rapid transposase-based approach will generate more VDV reads.  
+  
+**Outlier reads**: Sometimes, I've noticed that a single read with a much longer size makes the VDV read selection algorithm fail. This is because the algorithm relies on the idea that VDV reads are the longer possible reads. However, chimeric reads or reads with the wrong barcode may also become outliers. In this case, the pipeline has already generated the read annotation in `tables/ReadClass/{sampleName}_ReadClass.rds`. This file can be imported in R using `readRDS("path/to/{sampleName}_ReadClass.rds")`. Then exploring this table allows to identify the outlier read(s). Now, we can remove the outlier(s) from the analysis by slightly modifying the `Snakefile`. In the `Snakefile`, in the rule named `Select_VDVreads`, there is a parameter that can be set as a comma separated list of read ids (e.g. `ignoredReads = "BAC03R253, BAC03R625"`). Just modify this line with the `ReadName` of the outlier read(s) and rerun the pipeline.
+
+### 'priority' error
+Rule RenamedReads_fq2fa intermittently generates an error that stops the pipeline after starting the first round of multiple alignments. To solve this, you only need to restart the pipeline and that's it.
+The error looks like this:
+```
+Traceback (most recent call last):
+  File "/N/u/pascmart/Carbonate/miniconda3/envs/snakEnv/lib/python3.8/site-packages/snakemake/__init__.py", line 626, in snakemake
+    success = workflow.execute(
+  File "Path/to/condaEnvironmentWithSnakeMake/lib/python3.8/site-packages/snakemake/workflow.py", line 951, in execute
+    success = scheduler.schedule()
+  File "Path/to/condaEnvironmentWithSnakeMake/lib/python3.8/site-packages/snakemake/scheduler.py", line 394, in schedule
+    run = self.job_selector(needrun)
+  File "Path/to/condaEnvironmentWithSnakeMake/lib/python3.8/site-packages/snakemake/scheduler.py", line 541, in job_selector
+    c = list(map(self.job_reward, jobs))  # job rewards
+  File "Path/to/condaEnvironmentWithSnakeMake/lib/python3.8/site-packages/snakemake/scheduler.py", line 634, in job_reward
+    return (job.priority, temp_size, input_size)
+  File "Path/to/condaEnvironmentWithSnakeMake/lib/python3.8/site-packages/snakemake/jobs.py", line 1007, in priority
+    return self.dag.priority(self)
+  File "Path/to/condaEnvironmentWithSnakeMake/lib/python3.8/site-packages/snakemake/dag.py", line 372, in priority
+    return self._priority[job]
+KeyError: RenamedReads_fq2fa
+
+```
+
+
